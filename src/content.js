@@ -196,6 +196,19 @@ const THEMES = ['auto', 'light', 'dark'];
   const adapter = ADAPTERS.find(function (a) { return a.host.test(location.hostname); });
   if (!adapter) return;
 
+/*
+   * An empty chat still has text on screen: mode switchers, placeholders, the
+   * composer's own buttons. The structural reader has no way to know those are
+   * not messages, so it happily scores them and reports a few tokens on a page
+   * where nothing has been said. Left alone, "Carry over" would hand you a
+   * summary assembled from button labels.
+   *
+   * The floor below is deliberately low. A real exchange clears it immediately;
+   * only stray interface text does not.
+   */
+  const MIN_TURNS = 2;
+  const MIN_TOKENS = 25;
+
   function readConversation() {
     let msgs;
     try {
@@ -203,9 +216,12 @@ const THEMES = ['auto', 'light', 'dark'];
     } catch (err) {
       return [];
     }
-    return msgs.filter(function (m) {
+    const clean = msgs.filter(function (m) {
       return m && m.text && (m.role === 'user' || m.role === 'assistant');
     });
+    if (clean.length < MIN_TURNS) return [];
+    const total = clean.reduce(function (n, m) { return n + E.estimateTokens(m.text); }, 0);
+    return total < MIN_TOKENS ? [] : clean;
   }
 
   /* ---------------------------------------------------------------------- *
