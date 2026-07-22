@@ -28,7 +28,7 @@ const TARGETS = {
   },
 };
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 function buildTarget(id, cfg) {
   const outDir = path.join(DIST, id);

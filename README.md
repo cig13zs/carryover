@@ -43,9 +43,17 @@ about 70% opacity until you hover it. **Alt+C** does the same thing as clicking
 it. At 80% full it says so once, then shuts up, because a gauge only helps if you
 happen to be looking at it.
 
-**New chat** in the panel opens a fresh conversation in the next tab, so the one
-you are reading stays open in case the paste goes wrong. Clicking the extension
-icon in the toolbar opens a small panel with links to the project and the tip jar.
+**New chat** starts a fresh conversation in the same tab and drops the handoff
+straight into the message box, so the whole loop is one click. Nothing is ever
+sent for you: the text is placed in the box and left there for you to read and
+send yourself.
+
+By default the handoff covers the whole conversation. The two small boxes in the
+panel header narrow it, so you can take messages 1 to 6 and leave the rest behind
+when only the early part mattered.
+
+Clicking the extension icon in the toolbar opens a small panel with links to the
+project and the tip jar.
 
 The handoff document contains what you actually lose when you start over:
 
@@ -83,6 +91,12 @@ nothing gracefully. You see the whole document before you paste it.
 - **UI lives in a closed shadow root**, so the host page can neither read nor
   restyle it.
 - **Clipboard writes happen inside your click** and nowhere else.
+- **Two things are stored locally, nothing else.** The pending handoff goes into
+  `sessionStorage` for the moment it takes to navigate to a new chat, and is
+  deleted as soon as it is read. Your theme choice goes into `localStorage` as
+  one of three words. Neither uses the `storage` permission, and neither leaves
+  the browser. Values read back from storage are checked against a whitelist
+  before use, because storage on a chat site is writable by that site.
 
 ## Legal
 

@@ -60,6 +60,15 @@ const sourceText = convo.map(m => m.text).join(' ').replace(/\s+/g, ' ');
   assert.ok(sourceText.includes(snippet), 'kept content traces back to the source');
 });
 
+// --- range selection --------------------------------------------------------
+// Picking "messages 1 to 4" must not leak anything from outside that window.
+// The UI slices before calling compact(), so this is the guarantee behind it.
+const ranged = E.compact(convo.slice(0, 4), { source: 'ChatGPT', keepLast: 2 });
+assert.ok(ranged.includes('chrome extension'), 'the selected range survives');
+assert.ok(!ranged.includes('Wire up the badge UI'), 'text after the range is excluded');
+assert.ok(!ranged.includes('const x = 2;'), 'code after the range is excluded');
+assert.ok(E.compact(convo.slice(0, 1), {}), 'a single-message range still builds');
+
 // --- edge cases -------------------------------------------------------------
 assert.strictEqual(E.compact([], {}), null, 'empty conversation yields nothing');
 assert.strictEqual(E.compact(null, {}), null, 'null input does not throw');

@@ -14,6 +14,29 @@
 
   const KOFI_URL = 'https://ko-fi.com/jju1s';
 
+  /*
+   * sessionStorage, not chrome.storage. It is same-origin, scoped to this one
+   * tab, cleared when the tab closes, and needs no manifest permission — which
+   * keeps the "declares nothing" promise intact. It is the only thing that can
+   * survive the navigation to a fresh chat in the same tab.
+   */
+  const HANDOFF_KEY = 'carryover:pending';
+  const THEME_KEY = 'carryover:theme';
+
+  /*
+   * A closed whitelist, not a cast. localStorage on a chat site is writable by
+   * that site and by anything running in it, so a value read back from storage
+   * is untrusted input. It ends up in a DOM attribute that CSS selects on, so
+   * anything outside these three strings is discarded and treated as 'auto'.
+   */
+  const THEMES = ['auto', 'light', 'dark'];
+
+  function readTheme() {
+    let v = null;
+    try { v = localStorage.getItem(THEME_KEY); } catch (err) { return 'auto'; }
+    return THEMES.indexOf(v) >= 0 ? v : 'auto';
+  }
+
   /* ---------------------------------------------------------------------- *
    * Site adapters
    * ---------------------------------------------------------------------- */
@@ -28,6 +51,9 @@
       host: /(^|\.)chatgpt\.com$/,
       ceiling: 32000,
       fresh: 'https://chatgpt.com/',
+      // ChatGPT's UI is monochrome; a blue button would read as foreign.
+      accent: '#0d0d0d',
+      accentDark: '#ececf1',
       /*
        * `data-turn` sits on every turn and reads "user" or "assistant".
        *
@@ -49,6 +75,9 @@
       host: /(^|\.)deepseek\.com$/,
       ceiling: 128000,
       fresh: 'https://chat.deepseek.com/',
+      // Matches the blue DeepSeek uses for its own DeepThink and Search chips.
+      accent: '#4d6bfe',
+      accentDark: '#8fa4ff',
       read: readStructural
     },
     {
@@ -57,6 +86,8 @@
       host: /(^|\.)grok\.com$/,
       ceiling: 128000,
       fresh: 'https://grok.com/',
+      accent: '#111111',
+      accentDark: '#e8e8e8',
       read: readStructural
     }
   ];
@@ -175,16 +206,14 @@
   host.style.cssText = 'position:fixed;z-index:2147483646;bottom:16px;right:16px;';
   const shadow = host.attachShadow({ mode: 'closed' });
 
-  const style = document.createElement('style');
-  style.textContent = [
+  /*
+   * Light rules are the base. Dark rules are written once and emitted twice:
+   * under [data-theme="dark"] for an explicit choice, and inside a
+   * prefers-color-scheme query under [data-theme="auto"] for following the OS.
+   * Writing them once keeps the two paths from drifting apart.
+   */
+  const BASE = [
     ':host,*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
-
-    /*
-     * The pill borrows the host page's visual language instead of fighting it:
-     * a quiet light capsule that sits just above the composer. The previous
-     * dark chip in the viewport corner read as bolted on, and on narrow windows
-     * it collided with the page's own controls.
-     */
     '.pill{display:flex;align-items:center;gap:9px;padding:4px 5px 4px 11px;border-radius:999px;',
     'background:rgba(255,255,255,.86);color:#52525b;font-size:12px;line-height:1;',
     'border:1px solid rgba(9,9,11,.08);box-shadow:0 1px 2px rgba(9,9,11,.05);',
@@ -194,54 +223,64 @@
     '.count{font-variant-numeric:tabular-nums;white-space:nowrap}',
     '.bar{position:relative;width:34px;height:3px;border-radius:2px;background:rgba(9,9,11,.11);overflow:hidden}',
     '.fill{position:absolute;inset:0 auto 0 0;width:0;background:#22c55e;transition:width .3s ease,background .3s ease}',
-
-    // A text button, not a filled block. Filled reads like an ad on someone else's page.
     'button{border:0;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;',
-    'background:transparent;color:#4d6bfe;cursor:pointer;transition:background .15s ease}',
-    'button:hover{background:rgba(77,107,254,.1)}',
+    'background:transparent;color:var(--accent);cursor:pointer;transition:background .15s ease}',
+    'button:hover{background:color-mix(in srgb,var(--accent) 11%,transparent)}',
     'button:disabled{opacity:.4;cursor:default;background:transparent}',
     '.tip{display:flex;align-items:center;padding:0 7px 0 1px;color:rgba(9,9,11,.2);',
     'text-decoration:none;font-size:12px;line-height:1;transition:color .16s ease}',
     '.tip:hover{color:#fb7185}',
-
     '.toast{margin-bottom:8px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.96);',
     'border:1px solid rgba(9,9,11,.08);color:#3f3f46;font-size:12px;line-height:1.45;max-width:280px;',
     'box-shadow:0 6px 22px rgba(9,9,11,.1)}',
-
     '.panel{display:flex;flex-direction:column;gap:9px;margin-bottom:8px;padding:12px;',
     'width:min(460px,calc(100vw - 48px));border-radius:14px;background:rgba(255,255,255,.97);',
     'border:1px solid rgba(9,9,11,.09);color:#27272a;box-shadow:0 12px 38px rgba(9,9,11,.16);',
     '-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}',
-    '.phead{display:flex;align-items:center;justify-content:space-between;gap:12px}',
-    '.ptitle{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums}',
+    '.phead{display:flex;align-items:center;gap:10px}',
+    '.ptitle{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.range{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:11px;opacity:.65}',
+    '.range input{width:44px;padding:3px 4px;border-radius:6px;font:inherit;text-align:center;',
+    'border:1px solid rgba(9,9,11,.16);background:transparent;color:inherit;',
+    'font-variant-numeric:tabular-nums;-moz-appearance:textfield}',
+    '.range input::-webkit-outer-spin-button,.range input::-webkit-inner-spin-button{',
+    '-webkit-appearance:none;margin:0}',
+    '.range input:focus{outline:1px solid var(--accent);opacity:1}',
     '.preview{width:100%;height:min(46vh,340px);resize:vertical;padding:10px;border-radius:9px;',
     'border:1px solid rgba(9,9,11,.12);background:rgba(9,9,11,.03);color:#3f3f46;',
     'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5}',
-    '.preview:focus{outline:1px solid rgba(77,107,254,.5)}',
+    '.preview:focus{outline:1px solid var(--accent)}',
     '.pfoot{display:flex;align-items:center;gap:8px}',
-    'button.ghost{color:#52525b;box-shadow:inset 0 0 0 1px rgba(9,9,11,.14)}',
-    'button.ghost:hover{background:rgba(9,9,11,.05)}',
+    'button.ghost{color:inherit;opacity:.8;box-shadow:inset 0 0 0 1px rgba(9,9,11,.14)}',
+    'button.ghost:hover{background:rgba(9,9,11,.05);opacity:1}',
     '.kofi{margin-left:auto;font-size:11px;color:#a1a1aa;text-decoration:none}',
     '.kofi:hover{color:#fb7185}',
-    '.hide{display:none}',
+    '.hide{display:none}'
+  ].join('');
 
-    // Follow the page into dark mode rather than glowing white in the corner.
-    '@media (prefers-color-scheme:dark){',
-    '.pill{background:rgba(30,30,34,.84);color:#d4d4d8;border-color:rgba(255,255,255,.09);',
-    'box-shadow:0 1px 2px rgba(0,0,0,.4)}',
+  const DARK = [
+    '.pill{background:rgba(30,30,34,.84);color:#d4d4d8;border-color:rgba(255,255,255,.09);box-shadow:0 1px 2px rgba(0,0,0,.4)}',
     '.pill:hover{box-shadow:0 3px 14px rgba(0,0,0,.5)}',
     '.bar{background:rgba(255,255,255,.14)}',
-    'button{color:#8fa4ff}',
-    'button:hover{background:rgba(143,164,255,.14)}',
+    'button{color:var(--accent-dark)}',
+    'button:hover{background:color-mix(in srgb,var(--accent-dark) 15%,transparent)}',
     '.tip{color:rgba(255,255,255,.24)}',
     '.toast{background:rgba(28,28,32,.96);border-color:rgba(255,255,255,.1);color:#e4e4e7}',
-    '.panel{background:rgba(24,24,28,.97);border-color:rgba(255,255,255,.1);color:#e4e4e7;',
-    'box-shadow:0 12px 38px rgba(0,0,0,.6)}',
+    '.panel{background:rgba(24,24,28,.97);border-color:rgba(255,255,255,.1);color:#e4e4e7;box-shadow:0 12px 38px rgba(0,0,0,.6)}',
     '.preview{background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.12);color:#d4d4d8}',
-    'button.ghost{color:#d4d4d8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}',
-    'button.ghost:hover{background:rgba(255,255,255,.07)}',
-    '}'
-  ].join('');
+    '.range input{border-color:rgba(255,255,255,.18)}',
+    'button.ghost{box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}',
+    'button.ghost:hover{background:rgba(255,255,255,.07)}'
+  ];
+
+  function scoped(prefix) {
+    return DARK.map(function (rule) { return prefix + ' ' + rule; }).join('');
+  }
+
+  const style = document.createElement('style');
+  style.textContent = BASE +
+    scoped('[data-theme="dark"]') +
+    '@media (prefers-color-scheme:dark){' + scoped('[data-theme="auto"]') + '}';
 
   const panel = document.createElement('div');
   panel.className = 'panel hide';
@@ -250,10 +289,31 @@
   panelHead.className = 'phead';
   const panelTitle = document.createElement('span');
   panelTitle.className = 'ptitle';
-  const closeBtn = document.createElement('button');
+const closeBtn = document.createElement('button');
   closeBtn.className = 'ghost';
   closeBtn.textContent = 'Close';
+
+  // Defaults to the whole conversation. The inputs are there for the times you
+  // only want the part where the useful thinking happened.
+  const range = document.createElement('div');
+  range.className = 'range';
+  const fromIn = document.createElement('input');
+  const toIn = document.createElement('input');
+  [fromIn, toIn].forEach(function (el) {
+    el.type = 'number';
+    el.min = '1';
+    el.title = 'Which messages to include';
+  });
+  const dash = document.createElement('span');
+  dash.textContent = 'to';
+  const ofN = document.createElement('span');
+  range.appendChild(fromIn);
+  range.appendChild(dash);
+  range.appendChild(toIn);
+  range.appendChild(ofN);
+
   panelHead.appendChild(panelTitle);
+  panelHead.appendChild(range);
   panelHead.appendChild(closeBtn);
 
   // A textarea, not a div: it renders text as text (never markup), and it lets
@@ -272,6 +332,9 @@
   const freshBtn = document.createElement('button');
   freshBtn.className = 'ghost';
   freshBtn.textContent = 'New chat';
+  const themeBtn = document.createElement('button');
+  themeBtn.className = 'ghost';
+  themeBtn.title = 'Theme: follow the system, or force light or dark';
   freshBtn.title = 'Open a fresh conversation in a new tab, then paste';
   const kofi = document.createElement('a');
   kofi.className = 'kofi';
@@ -282,6 +345,7 @@
   panelFoot.appendChild(copyBtn);
   panelFoot.appendChild(saveBtn);
   panelFoot.appendChild(freshBtn);
+  panelFoot.appendChild(themeBtn);
   panelFoot.appendChild(kofi);
 
   panel.appendChild(panelHead);
@@ -329,10 +393,27 @@
   wrap.appendChild(pill);
   shadow.appendChild(style);
   shadow.appendChild(wrap);
+wrap.style.setProperty('--accent', adapter.accent || '#4d6bfe');
+  wrap.style.setProperty('--accent-dark', adapter.accentDark || '#8fa4ff');
+  applyTheme();
   document.documentElement.appendChild(host);
 
   const NUDGE_AT = 80;
   let nudged = false;
+const THEME_LABEL = { auto: 'Theme: auto', light: 'Theme: light', dark: 'Theme: dark' };
+  let theme = readTheme();
+
+  function applyTheme() {
+    wrap.setAttribute('data-theme', theme);          // already whitelisted
+    themeBtn.textContent = THEME_LABEL[theme];
+  }
+
+  themeBtn.addEventListener('click', function () {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { localStorage.setItem(THEME_KEY, theme); } catch (err) {}
+    applyTheme();
+  });
+
   let toastTimer;
   function say(message) {
     // textContent, never innerHTML — page content must never become markup here.
@@ -400,16 +481,48 @@
     }
   }
 
-  function openPanel() {
-    const msgs = readConversation();
-    const doc = E.compact(msgs, { source: adapter.name });
-    if (!doc) { say('Nothing to carry over yet.'); return; }
+let current = [];
+
+  function clamp(n, lo, hi) {
+    return Math.min(hi, Math.max(lo, isFinite(n) ? n : lo));
+  }
+
+  /*
+   * Rebuild the handoff from whatever slice is selected. The engine already
+   * takes a plain array, so narrowing the range is just slicing before the
+   * call — no second code path, and the full-conversation default is simply
+   * the whole array.
+   */
+  function render() {
+    const n = current.length;
+    const from = clamp(parseInt(fromIn.value, 10), 1, n);
+    const to = clamp(parseInt(toIn.value, 10), from, n);
+    if (String(from) !== fromIn.value) fromIn.value = from;
+    if (String(to) !== toIn.value) toIn.value = to;
+
+    const doc = E.compact(current.slice(from - 1, to), { source: adapter.name }) || '';
     preview.value = doc;
-    panelTitle.textContent = msgs.length + ' messages · ~' +
-      E.formatTokens(E.estimateTokens(doc)) + ' tokens in the handoff';
+    const picked = to - from + 1;
+    panelTitle.textContent = (picked === n ? 'All ' + n : picked + ' of ' + n) +
+      ' messages · ~' + E.formatTokens(E.estimateTokens(doc));
+    ofN.textContent = 'of ' + n;
+    return doc;
+  }
+
+  function openPanel() {
+    current = readConversation();
+    if (!current.length) { say('Nothing to carry over yet.'); return; }
+    fromIn.value = '1';
+    toIn.value = String(current.length);
+    fromIn.max = toIn.max = String(current.length);
+    const doc = render();
     panel.classList.remove('hide');
     copyDoc(doc);
   }
+
+  [fromIn, toIn].forEach(function (el) {
+    el.addEventListener('input', render);
+  });
 
   button.addEventListener('click', openPanel);
   closeBtn.addEventListener('click', function () { panel.classList.add('hide'); });
@@ -422,10 +535,18 @@
    * Opening it in a new tab keeps this one intact, so if the paste goes wrong
    * the original conversation is still sitting there.
    */
-  freshBtn.addEventListener('click', function () {
+freshBtn.addEventListener('click', function () {
     if (!adapter.fresh) return;
-    open(adapter.fresh, '_blank', 'noopener');
-    say('Opened a new chat in the next tab. Paste there.');
+    let stashed = false;
+    try {
+      sessionStorage.setItem(HANDOFF_KEY, preview.value);
+      stashed = true;
+    } catch (err) {
+      // private mode, or storage full. Fall through: the text is already on the
+      // clipboard, so the user can still paste it by hand.
+    }
+    if (!stashed) say('Could not hand it over automatically. It is on your clipboard, paste it.');
+    location.href = adapter.fresh;
   });
 
   saveBtn.addEventListener('click', function () {
@@ -458,5 +579,78 @@ addEventListener('keydown', function (e) {
   });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
+/* ---------------------------------------------------------------------- *
+   * Landing in the new chat
+   * ---------------------------------------------------------------------- */
+
+  /*
+   * The composer is found structurally rather than by class name, for the same
+   * reason the message reader is: these sites ship build-hashed classes that
+   * change on every deploy. The composer is the widest text entry sitting in
+   * the lower part of the viewport.
+   */
+  function findComposer() {
+    const nodes = document.querySelectorAll('textarea,[contenteditable="true"]');
+    let best = null, bestW = 0;
+    for (const el of nodes) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 180 || r.height < 16) continue;
+      if (r.top < innerHeight * 0.35) continue;
+      if (r.width > bestW) { bestW = r.width; best = el; }
+    }
+    return best;
+  }
+
+  /*
+   * Setting .value directly does nothing useful on a React-controlled input:
+   * React holds its own copy of the value and overwrites yours on the next
+   * render. Going through the native prototype setter and then firing a
+   * bubbling input event is what makes the framework accept the change.
+   */
+  function insertText(el, text) {
+    el.focus();
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+      const proto = el.tagName === 'TEXTAREA'
+        ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+      if (desc && desc.set) desc.set.call(el, text);
+      else el.value = text;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      try {
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, text);
+      } catch (err) {
+        el.textContent = text;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  }
+
+  /*
+   * Nothing is ever sent. The handoff is placed in the box and left there, so
+   * you read it and press enter yourself.
+   */
+  function restorePending() {
+    let doc = null;
+    try { doc = sessionStorage.getItem(HANDOFF_KEY); } catch (err) { return; }
+    if (!doc) return;
+    try { sessionStorage.removeItem(HANDOFF_KEY); } catch (err) {}
+
+    let tries = 0;
+    (function attempt() {
+      const el = findComposer();
+      if (el) {
+        insertText(el, doc);
+        say('Handoff dropped into the box. Read it, then send when you are ready.');
+        return;
+      }
+      if (tries++ < 40) setTimeout(attempt, 250);   // composer mounts late
+      else say('New chat is ready but the box was not found. Paste from your clipboard.');
+    })();
+  }
+
   refresh();
+  restorePending();
 })();

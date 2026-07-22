@@ -32,14 +32,16 @@
 <div class="wrap">
 
 <h1>Privacy policy</h1>
-<p class="sub">Carryover browser extension &middot; last updated 22 July 2026</p>
+<p class="sub">Carryover browser extension &middot; last updated 23 July 2026</p>
 
 <h2>The short version</h2>
-<p>Carryover collects nothing, stores nothing and transmits nothing. There is no server to send data
-to, no account to create and no analytics of any kind.</p>
+<p>Carryover collects nothing and transmits nothing. There is no server to send data to, no account
+to create and no analytics of any kind. It stores two small things on your own device, described
+under <a href="#local">local storage</a> below, and neither ever leaves your browser.</p>
 
 <h2>What data is collected</h2>
-<p>None. Specifically, Carryover does not collect, store, transmit or sell:</p>
+<p>None. Nothing is gathered, retained on any server, transmitted or sold. Specifically, Carryover
+never collects, transmits or sells:</p>
 <ul>
   <li>personally identifiable information</li>
   <li>health, financial or authentication information</li>
@@ -47,6 +49,10 @@ to, no account to create and no analytics of any kind.</p>
   <li>location, browsing history or web activity</li>
   <li>usage analytics, crash reports or telemetry</li>
 </ul>
+<p>The one nuance, stated plainly rather than buried: your own chat text is held in your browser's
+own <code>sessionStorage</code> for the few seconds it takes to move it into a new conversation, and
+only when you ask for that. See <a href="#local">local storage</a>. It is your data, on your device,
+on the site it came from, and it is deleted as soon as it is used.</p>
 
 <h2>How it works instead</h2>
 <p>The extension reads the conversation text that your browser has already rendered on the page you
@@ -55,6 +61,22 @@ That processing happens entirely inside your own browser tab and the result is n
 <p>When you click <strong>Carry over</strong>, the summary is placed on your clipboard and shown to
 you on screen. If you choose <strong>Save .md</strong>, the file is written by your browser to your
 own machine. Nothing leaves your device at any point.</p>
+
+<h2 id="local">Local storage</h2>
+<p>Two things are written to your browser's own storage for the current site. Neither is transmitted
+anywhere, and neither uses the extension <code>storage</code> permission, which is why the manifest
+still declares no permissions at all.</p>
+<ul>
+  <li><strong>The pending handoff</strong>, in <code>sessionStorage</code>, only when you press
+  <em>New chat</em>. It exists so the text survives the page navigation into the fresh conversation.
+  It is deleted the instant it is read, and <code>sessionStorage</code> is cleared by the browser
+  when you close the tab. It is your own conversation text, held for a few seconds, on the same site
+  it came from.</li>
+  <li><strong>Your theme choice</strong>, in <code>localStorage</code>: the single word
+  <code>auto</code>, <code>light</code> or <code>dark</code>. Any other value is ignored and treated
+  as <code>auto</code>.</li>
+</ul>
+<p>Clearing site data for the chat site removes both.</p>
 
 <h2>Permissions</h2>
 <p>The extension declares no <code>permissions</code> and no <code>host_permissions</code> in its
