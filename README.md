@@ -38,6 +38,15 @@ half of the handoff you don't need before you paste it, or hit **Save .md** to
 keep it as a file. Escape closes the panel. Nothing is sent anywhere at any
 point in this.
 
+The pill matches the page it sits on, light or dark, and stays out of the way at
+about 70% opacity until you hover it. **Alt+C** does the same thing as clicking
+it. At 80% full it says so once, then shuts up, because a gauge only helps if you
+happen to be looking at it.
+
+**New chat** in the panel opens a fresh conversation in the next tab, so the one
+you are reading stays open in case the paste goes wrong. Clicking the extension
+icon in the toolbar opens a small panel with links to the project and the tip jar.
+
 The handoff document contains what you actually lose when you start over:
 
 | Section | What goes in it |

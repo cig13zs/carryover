@@ -28,7 +28,7 @@ const TARGETS = {
   },
 };
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 function buildTarget(id, cfg) {
   const outDir = path.join(DIST, id);
@@ -37,6 +37,11 @@ function buildTarget(id, cfg) {
 
   fs.copyFileSync(path.join(SRC, 'engine.js'), path.join(outDir, 'engine.js'));
   fs.copyFileSync(path.join(SRC, 'content.js'), path.join(outDir, 'content.js'));
+// Version lives in one place. The popup used to hardcode it, which is exactly
+  // the kind of thing that silently goes stale two releases later.
+  const popup = fs.readFileSync(path.join(SRC, 'popup.html'), 'utf8')
+    .replace(/__VERSION__/g, VERSION);
+  fs.writeFileSync(path.join(outDir, 'popup.html'), popup);
   for (const icon of ICONS) {
     fs.copyFileSync(path.join(SRC, 'icons', icon), path.join(outDir, 'icons', icon));
   }
@@ -47,7 +52,14 @@ function buildTarget(id, cfg) {
     version: VERSION,
     homepage_url: 'https://github.com/cig13zs/carryover',
     description: cfg.description,
-    icons: { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' },
+icons: { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' },
+    // A toolbar popup needs no permission. It is the only place a user can find
+    // the project and the tip jar once the extension is installed from a store.
+    action: {
+      default_title: cfg.name,
+      default_popup: 'popup.html',
+      default_icon: { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' },
+    },
     content_scripts: [
       {
         matches: [cfg.match],

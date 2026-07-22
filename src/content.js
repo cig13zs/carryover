@@ -27,6 +27,7 @@
       name: 'ChatGPT',
       host: /(^|\.)chatgpt\.com$/,
       ceiling: 32000,
+      fresh: 'https://chatgpt.com/',
       /*
        * `data-turn` sits on every turn and reads "user" or "assistant".
        *
@@ -47,6 +48,7 @@
       name: 'DeepSeek',
       host: /(^|\.)deepseek\.com$/,
       ceiling: 128000,
+      fresh: 'https://chat.deepseek.com/',
       read: readStructural
     },
     {
@@ -54,6 +56,7 @@
       name: 'Grok',
       host: /(^|\.)grok\.com$/,
       ceiling: 128000,
+      fresh: 'https://grok.com/',
       read: readStructural
     }
   ];
@@ -174,38 +177,70 @@
 
   const style = document.createElement('style');
   style.textContent = [
-    ':host,*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}',
-    '.pill{display:flex;align-items:center;gap:10px;padding:7px 9px 7px 12px;border-radius:999px;',
-    'background:rgba(24,24,27,.92);color:#fafafa;font-size:12px;line-height:1;',
-    'box-shadow:0 4px 16px rgba(0,0,0,.22);backdrop-filter:blur(8px);',
-    'opacity:.55;transition:opacity .18s ease}',
-    '.pill:hover{opacity:1}',
+    ':host,*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
+
+    /*
+     * The pill borrows the host page's visual language instead of fighting it:
+     * a quiet light capsule that sits just above the composer. The previous
+     * dark chip in the viewport corner read as bolted on, and on narrow windows
+     * it collided with the page's own controls.
+     */
+    '.pill{display:flex;align-items:center;gap:9px;padding:4px 5px 4px 11px;border-radius:999px;',
+    'background:rgba(255,255,255,.86);color:#52525b;font-size:12px;line-height:1;',
+    'border:1px solid rgba(9,9,11,.08);box-shadow:0 1px 2px rgba(9,9,11,.05);',
+    '-webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%);',
+    'opacity:.72;transition:opacity .2s ease,box-shadow .2s ease}',
+    '.pill:hover{opacity:1;box-shadow:0 3px 12px rgba(9,9,11,.09)}',
     '.count{font-variant-numeric:tabular-nums;white-space:nowrap}',
-    '.bar{position:relative;width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden}',
-    '.fill{position:absolute;inset:0 auto 0 0;width:0;background:#4ade80;transition:width .3s ease,background .3s ease}',
-    'button{border:0;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:550;',
-    'background:#fafafa;color:#18181b;cursor:pointer;transition:transform .12s ease}',
-    'button:hover{transform:translateY(-1px)}',
-    'button:disabled{opacity:.5;cursor:default;transform:none}',
-    '.toast{margin-bottom:8px;padding:9px 12px;border-radius:10px;background:rgba(24,24,27,.95);',
-    'color:#fafafa;font-size:12px;line-height:1.45;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.22)}',
-    '.panel{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:12px;',
-    'width:min(460px,calc(100vw - 48px));border-radius:14px;background:rgba(24,24,27,.97);',
-    'color:#fafafa;box-shadow:0 10px 34px rgba(0,0,0,.34);backdrop-filter:blur(10px)}',
-    '.phead{display:flex;align-items:center;justify-content:space-between;gap:12px}',
-    '.ptitle{font-size:12px;opacity:.72;font-variant-numeric:tabular-nums}',
-    '.preview{width:100%;height:min(46vh,340px);resize:vertical;padding:10px;border-radius:9px;',
-    'border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.32);color:#e7e7ea;',
-    'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5}',
-    '.preview:focus{outline:1px solid rgba(255,255,255,.4)}',
-    '.pfoot{display:flex;align-items:center;gap:8px}',
-    'button.ghost{background:transparent;color:#fafafa;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}',
-    '.kofi{margin-left:auto;font-size:11px;color:#a1a1aa;text-decoration:none}',
-    '.tip{color:rgba(255,255,255,.34);text-decoration:none;font-size:12.5px;line-height:1;',
-    'padding:0 3px 0 5px;transition:color .16s ease}',
+    '.bar{position:relative;width:34px;height:3px;border-radius:2px;background:rgba(9,9,11,.11);overflow:hidden}',
+    '.fill{position:absolute;inset:0 auto 0 0;width:0;background:#22c55e;transition:width .3s ease,background .3s ease}',
+
+    // A text button, not a filled block. Filled reads like an ad on someone else's page.
+    'button{border:0;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:600;',
+    'background:transparent;color:#4d6bfe;cursor:pointer;transition:background .15s ease}',
+    'button:hover{background:rgba(77,107,254,.1)}',
+    'button:disabled{opacity:.4;cursor:default;background:transparent}',
+    '.tip{display:flex;align-items:center;padding:0 7px 0 1px;color:rgba(9,9,11,.2);',
+    'text-decoration:none;font-size:12px;line-height:1;transition:color .16s ease}',
     '.tip:hover{color:#fb7185}',
-    '.kofi:hover{color:#fafafa;text-decoration:underline}',
-    '.hide{display:none}'
+
+    '.toast{margin-bottom:8px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.96);',
+    'border:1px solid rgba(9,9,11,.08);color:#3f3f46;font-size:12px;line-height:1.45;max-width:280px;',
+    'box-shadow:0 6px 22px rgba(9,9,11,.1)}',
+
+    '.panel{display:flex;flex-direction:column;gap:9px;margin-bottom:8px;padding:12px;',
+    'width:min(460px,calc(100vw - 48px));border-radius:14px;background:rgba(255,255,255,.97);',
+    'border:1px solid rgba(9,9,11,.09);color:#27272a;box-shadow:0 12px 38px rgba(9,9,11,.16);',
+    '-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}',
+    '.phead{display:flex;align-items:center;justify-content:space-between;gap:12px}',
+    '.ptitle{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums}',
+    '.preview{width:100%;height:min(46vh,340px);resize:vertical;padding:10px;border-radius:9px;',
+    'border:1px solid rgba(9,9,11,.12);background:rgba(9,9,11,.03);color:#3f3f46;',
+    'font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5}',
+    '.preview:focus{outline:1px solid rgba(77,107,254,.5)}',
+    '.pfoot{display:flex;align-items:center;gap:8px}',
+    'button.ghost{color:#52525b;box-shadow:inset 0 0 0 1px rgba(9,9,11,.14)}',
+    'button.ghost:hover{background:rgba(9,9,11,.05)}',
+    '.kofi{margin-left:auto;font-size:11px;color:#a1a1aa;text-decoration:none}',
+    '.kofi:hover{color:#fb7185}',
+    '.hide{display:none}',
+
+    // Follow the page into dark mode rather than glowing white in the corner.
+    '@media (prefers-color-scheme:dark){',
+    '.pill{background:rgba(30,30,34,.84);color:#d4d4d8;border-color:rgba(255,255,255,.09);',
+    'box-shadow:0 1px 2px rgba(0,0,0,.4)}',
+    '.pill:hover{box-shadow:0 3px 14px rgba(0,0,0,.5)}',
+    '.bar{background:rgba(255,255,255,.14)}',
+    'button{color:#8fa4ff}',
+    'button:hover{background:rgba(143,164,255,.14)}',
+    '.tip{color:rgba(255,255,255,.24)}',
+    '.toast{background:rgba(28,28,32,.96);border-color:rgba(255,255,255,.1);color:#e4e4e7}',
+    '.panel{background:rgba(24,24,28,.97);border-color:rgba(255,255,255,.1);color:#e4e4e7;',
+    'box-shadow:0 12px 38px rgba(0,0,0,.6)}',
+    '.preview{background:rgba(0,0,0,.3);border-color:rgba(255,255,255,.12);color:#d4d4d8}',
+    'button.ghost{color:#d4d4d8;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}',
+    'button.ghost:hover{background:rgba(255,255,255,.07)}',
+    '}'
   ].join('');
 
   const panel = document.createElement('div');
@@ -234,6 +269,10 @@
   const saveBtn = document.createElement('button');
   saveBtn.className = 'ghost';
   saveBtn.textContent = 'Save .md';
+  const freshBtn = document.createElement('button');
+  freshBtn.className = 'ghost';
+  freshBtn.textContent = 'New chat';
+  freshBtn.title = 'Open a fresh conversation in a new tab, then paste';
   const kofi = document.createElement('a');
   kofi.className = 'kofi';
   kofi.href = KOFI_URL;
@@ -242,6 +281,7 @@
   kofi.textContent = 'Ko-fi';
   panelFoot.appendChild(copyBtn);
   panelFoot.appendChild(saveBtn);
+  panelFoot.appendChild(freshBtn);
   panelFoot.appendChild(kofi);
 
   panel.appendChild(panelHead);
@@ -291,6 +331,8 @@
   shadow.appendChild(wrap);
   document.documentElement.appendChild(host);
 
+  const NUDGE_AT = 80;
+  let nudged = false;
   let toastTimer;
   function say(message) {
     // textContent, never innerHTML — page content must never become markup here.
@@ -313,7 +355,23 @@
     const pct = Math.min(100, Math.round((tokens / adapter.ceiling) * 100));
     count.textContent = '~' + E.formatTokens(tokens) + ' · ' + pct + '%';
     fill.style.width = Math.max(2, pct) + '%';
-    fill.style.background = pct >= 80 ? '#f87171' : pct >= 55 ? '#fbbf24' : '#4ade80';
+    fill.style.background = pct >= 80 ? '#ef4444' : pct >= 55 ? '#f59e0b' : '#22c55e';
+
+    /*
+     * Say something once, at the point where it is still cheap to act. A gauge
+     * only helps if you happen to look at it, and nobody watches a progress bar
+     * while they are working. Below the threshold the flag resets, so a fresh
+     * conversation gets its own single nudge and this never becomes nagging.
+     *
+     * Deliberately in-memory: chrome.storage would mean declaring the "storage"
+     * permission, and the whole pitch is that this extension declares none.
+     */
+    if (pct >= NUDGE_AT && !nudged) {
+      nudged = true;
+      say('This chat is ' + pct + '% full. Carry it over now and the next one starts clean.');
+    } else if (pct < NUDGE_AT - 10) {
+      nudged = false;
+    }
   }
 
   /*
@@ -359,7 +417,19 @@
 
   // Saving uses a blob URL built in the page — no downloads permission, and the
   // file never leaves the machine.
+  /*
+   * The last step of the job was always manual: copy, then go find a new chat.
+   * Opening it in a new tab keeps this one intact, so if the paste goes wrong
+   * the original conversation is still sitting there.
+   */
+  freshBtn.addEventListener('click', function () {
+    if (!adapter.fresh) return;
+    open(adapter.fresh, '_blank', 'noopener');
+    say('Opened a new chat in the next tab. Paste there.');
+  });
+
   saveBtn.addEventListener('click', function () {
+
     const url = URL.createObjectURL(new Blob([preview.value], { type: 'text/markdown' }));
     const a = document.createElement('a');
     a.href = url;
@@ -368,8 +438,17 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
   });
 
-  addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !panel.classList.contains('hide')) panel.classList.add('hide');
+addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !panel.classList.contains('hide')) {
+      panel.classList.add('hide');
+      return;
+    }
+    // Alt+C, chosen because it needs no manifest "commands" entry and so no
+    // extra permission. Ignored while a modifier combo the page owns is held.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'c' || e.key === 'C')) {
+      e.preventDefault();
+      openPanel();
+    }
   });
 
   let debounce;
