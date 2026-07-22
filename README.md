@@ -2,6 +2,12 @@
 
 See how full an AI chat is getting, then carry its context into a new one.
 
+**The manifest has no `permissions` key.** Not a reduced set — none. It cannot
+read your other tabs, your history, your cookies, or anything outside the one
+chat page it runs on. Every other tool in this category needs broad host access
+to work, because they move context *between* different AI sites. This one
+doesn't, so it doesn't ask.
+
 Long chats get slow, expensive, and forgetful. Starting a fresh one costs you
 everything the model learned about your problem. Carryover reads the conversation
 already on your screen, shows you roughly how big it has grown, and — on one click —
