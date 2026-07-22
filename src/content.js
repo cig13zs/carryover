@@ -201,6 +201,9 @@
     '.pfoot{display:flex;align-items:center;gap:8px}',
     'button.ghost{background:transparent;color:#fafafa;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}',
     '.kofi{margin-left:auto;font-size:11px;color:#a1a1aa;text-decoration:none}',
+    '.tip{color:rgba(255,255,255,.34);text-decoration:none;font-size:12.5px;line-height:1;',
+    'padding:0 3px 0 5px;transition:color .16s ease}',
+    '.tip:hover{color:#fb7185}',
     '.kofi:hover{color:#fafafa;text-decoration:underline}',
     '.hide{display:none}'
   ].join('');
@@ -265,9 +268,20 @@
   button.textContent = 'Carry over';
   button.title = 'Compact this conversation and copy it, to paste into a new chat';
 
+  // ponytail: a heart, not a "Donate" button. Visible while you use the thing,
+  // low-contrast enough to ignore forever. Warms on hover so it reads clickable.
+  const tip = document.createElement('a');
+  tip.className = 'tip';
+  tip.href = KOFI_URL;
+  tip.target = '_blank';
+  tip.rel = 'noopener noreferrer';
+  tip.textContent = '♥';
+  tip.title = 'Carryover is free. Buy me a coffee if it helped.';
+
   pill.appendChild(count);
   pill.appendChild(bar);
   pill.appendChild(button);
+  pill.appendChild(tip);
 
   const wrap = document.createElement('div');
   wrap.appendChild(panel);

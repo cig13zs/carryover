@@ -12,17 +12,17 @@ const ICONS = ['icon16.png', 'icon32.png', 'icon48.png', 'icon128.png'];
 
 const TARGETS = {
   chatgpt: {
-    name: 'Carryover for ChatGPT',
+    name: 'Carryover — unofficial context handoff for ChatGPT',
     match: 'https://chatgpt.com/*',
     description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by OpenAI.',
   },
   deepseek: {
-    name: 'Carryover for DeepSeek',
+    name: 'Carryover — unofficial context handoff for DeepSeek',
     match: 'https://chat.deepseek.com/*',
     description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by DeepSeek.',
   },
   grok: {
-    name: 'Carryover for Grok',
+    name: 'Carryover — unofficial context handoff for Grok',
     match: 'https://grok.com/*',
     description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by xAI.',
   },

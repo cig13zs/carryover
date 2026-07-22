@@ -13,6 +13,10 @@ Works on ChatGPT, DeepSeek, and Grok. One build per site.
 
 **[cig13zs.github.io/carryover](https://cig13zs.github.io/carryover/)**
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-buy_me_a_coffee-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/jju1s)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/cig13zs/carryover/test.yml?style=flat-square&label=tests)](https://github.com/cig13zs/carryover/actions)
+
 ---
 
 ## How it works
