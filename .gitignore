@@ -1,0 +1,6 @@
+dist/
+*.zip
+node_modules/
+
+# needs `gh auth refresh -s workflow` before this can be pushed
+.github/workflows/
