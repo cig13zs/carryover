@@ -130,7 +130,7 @@ break them.
 ---
 
 If this saved you some retyping, you can
-[buy me a coffee on Ko-fi](https://ko-fi.com/cig13zs). It's free either way,
+[buy me a coffee on Ko-fi](https://ko-fi.com/jju1s). It's free either way,
 and it stays free. There is no paid tier waiting behind this.
 
 MIT licensed. Do what you like with it.
