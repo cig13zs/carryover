@@ -13,4 +13,5 @@ jobs:
         with:
           node-version: 20
       - run: node engine.test.js
+      - run: node boot.test.js
       - run: node build.js

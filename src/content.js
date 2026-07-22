@@ -29,7 +29,17 @@
    * is untrusted input. It ends up in a DOM attribute that CSS selects on, so
    * anything outside these three strings is discarded and treated as 'auto'.
    */
-  const THEMES = ['auto', 'light', 'dark'];
+const THEMES = ['auto', 'light', 'dark'];
+  const THEME_LABEL = { auto: 'Theme: auto', light: 'Theme: light', dark: 'Theme: dark' };
+
+  /*
+   * Declared up here, not beside applyTheme(). A `let` binding sits in the
+   * temporal dead zone until its own declaration runs, so a hoisted function
+   * that reads it must never be called above it. Getting that wrong throws
+   * before the UI is built and takes the whole content script down silently:
+   * no pill, no panel, no visible error. It shipped that way in 1.2.0.
+   */
+  let theme = 'auto';
 
   function readTheme() {
     let v = null;
@@ -393,15 +403,14 @@ const closeBtn = document.createElement('button');
   wrap.appendChild(pill);
   shadow.appendChild(style);
   shadow.appendChild(wrap);
-wrap.style.setProperty('--accent', adapter.accent || '#4d6bfe');
+  wrap.style.setProperty('--accent', adapter.accent || '#4d6bfe');
   wrap.style.setProperty('--accent-dark', adapter.accentDark || '#8fa4ff');
+  theme = readTheme();
   applyTheme();
   document.documentElement.appendChild(host);
 
   const NUDGE_AT = 80;
   let nudged = false;
-const THEME_LABEL = { auto: 'Theme: auto', light: 'Theme: light', dark: 'Theme: dark' };
-  let theme = readTheme();
 
   function applyTheme() {
     wrap.setAttribute('data-theme', theme);          // already whitelisted

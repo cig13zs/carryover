@@ -79,6 +79,7 @@
     padding:16px; overflow-x:auto; font-size:13px; line-height:1.6; margin:0;
   }
   ul{margin:0; padding-left:20px}
+  kbd{font:inherit;font-size:.86em;padding:1px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--code)}
   li{margin-bottom:10px}
   li::marker{color:var(--muted)}
   .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); margin-top:22px}
@@ -130,6 +131,28 @@
 </section>
 
 <section>
+  <h2>One click, start to finish</h2>
+  <p>Press <strong>Carry over</strong> and the handoff is built, copied, and shown to you in an
+  editable box. Press <strong>New chat</strong> and it opens a fresh conversation in the same tab
+  with the text already sitting in the message box.</p>
+  <p class="muted">Nothing is ever sent for you. The handoff is placed in the box and left there,
+  so you read it and press enter yourself. <kbd>Alt</kbd>+<kbd>C</kbd> does the same as clicking
+  the pill, and at 80% full it tells you once and then stays quiet.</p>
+  <div class="grid">
+    <div class="card">
+      <h3>Take part of it</h3>
+      <p>Defaults to the whole conversation. Two boxes in the panel header narrow it, for when only
+      the early part mattered.</p>
+    </div>
+    <div class="card">
+      <h3>Fits the site</h3>
+      <p>Each build uses its own accent, so it reads as part of the page rather than something
+      bolted on. Auto, light or dark, your choice.</p>
+    </div>
+  </div>
+</section>
+
+<section>
   <h2>What ends up in the handoff</h2>
   <div class="scroller">
   <table>
@@ -171,6 +194,11 @@
     <div class="card">
       <h3>Rendered as text, never markup</h3>
       <p>Your chat content can never become HTML inside the extension's own UI.</p>
+    </div>
+    <div class="card">
+      <h3>Two things stored, locally</h3>
+      <p>A handoff waiting to move tabs, deleted the moment it is used, and your theme choice.
+      Neither leaves the browser. <a href="privacy.html">The details</a>.</p>
     </div>
   </div>
 </section>
