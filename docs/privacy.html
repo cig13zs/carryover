@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy policy — Carryover</title>
+<meta name="description" content="Carryover collects no data of any kind. It makes no network requests and declares no permissions.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>☕</text></svg>">
+<style>
+  :root{--bg:#fbfbfa;--ink:#18181b;--muted:#5d5d66;--line:#e6e6e3;--code:#f4f4f2}
+  @media (prefers-color-scheme:dark){:root{--bg:#0e0e10;--ink:#f2f2f3;--muted:#a1a1aa;--line:#26262b;--code:#1b1b1f}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.7 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;padding:72px 24px 96px}
+  h1{font-size:34px;letter-spacing:-.025em;margin:0 0 6px}
+  .sub{color:var(--muted);margin:0 0 40px;font-size:14.5px}
+  h2{font-size:19px;margin:38px 0 10px;letter-spacing:-.01em}
+  p{margin:0 0 14px}
+  ul{padding-left:20px;margin:0 0 14px}
+  li{margin-bottom:9px}
+  li::marker{color:var(--muted)}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:13.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  a{color:inherit;text-underline-offset:3px}
+  .back{display:inline-block;margin-top:44px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:14px;text-decoration:none;width:100%}
+  .back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Privacy policy</h1>
+<p class="sub">Carryover browser extension &middot; last updated 22 July 2026</p>
+
+<h2>The short version</h2>
+<p>Carryover collects nothing, stores nothing and transmits nothing. There is no server to send data
+to, no account to create and no analytics of any kind.</p>
+
+<h2>What data is collected</h2>
+<p>None. Specifically, Carryover does not collect, store, transmit or sell:</p>
+<ul>
+  <li>personally identifiable information</li>
+  <li>health, financial or authentication information</li>
+  <li>personal communications, including the contents of your chats</li>
+  <li>location, browsing history or web activity</li>
+  <li>usage analytics, crash reports or telemetry</li>
+</ul>
+
+<h2>How it works instead</h2>
+<p>The extension reads the conversation text that your browser has already rendered on the page you
+are looking at, in order to estimate its size and to assemble a summary when you click the button.
+That processing happens entirely inside your own browser tab and the result is never sent anywhere.</p>
+<p>When you click <strong>Carry over</strong>, the summary is placed on your clipboard and shown to
+you on screen. If you choose <strong>Save .md</strong>, the file is written by your browser to your
+own machine. Nothing leaves your device at any point.</p>
+
+<h2>Permissions</h2>
+<p>The extension declares no <code>permissions</code> and no <code>host_permissions</code> in its
+manifest. It runs one content script on the single chat site each build was made for, and it can do
+nothing else. You can verify this by reading <code>manifest.json</code> in the extension folder.</p>
+
+<h2>Network access</h2>
+<p>The extension makes no network requests. It contains no remote code, no third-party libraries and
+no tracking scripts. Because it never opens a connection, it cannot transmit your conversations even
+in principle.</p>
+
+<h2>Third parties</h2>
+<p>No data is shared with third parties, because no data is collected. Carryover is not affiliated
+with, endorsed by or connected to OpenAI, DeepSeek or xAI.</p>
+
+<h2>Changes</h2>
+<p>If this policy ever changes, the updated version will be published at this address and the date
+above will change. The source code is public, so any change in behaviour is visible in the commit
+history.</p>
+
+<h2>Contact</h2>
+<p>Questions or reports:
+<a href="https://github.com/cig13zs/carryover/issues">open an issue on GitHub</a>.</p>
+
+<a class="back" href="./">&larr; Back to Carryover</a>
+
+</div>
+</body>
+</html>

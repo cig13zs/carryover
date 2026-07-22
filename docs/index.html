@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Carryover — move a full AI chat into a new one</title>
+<meta name="description" content="A Chrome extension that shows how full your ChatGPT, DeepSeek or Grok conversation is, then compacts it into a handoff you can paste into a new chat. No server, no account, no permissions.">
+<meta property="og:title" content="Carryover">
+<meta property="og:description" content="See how full an AI chat is getting, then carry its context into a new one. Works fully offline.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>☕</text></svg>">
+<style>
+  :root{
+    --bg:#fbfbfa; --panel:#fff; --ink:#18181b; --muted:#5d5d66; --line:#e6e6e3;
+    --accent:#16a34a; --accent-soft:#dcfce7; --code:#f4f4f2; --shadow:0 1px 3px rgba(0,0,0,.06),0 12px 32px -12px rgba(0,0,0,.14);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0e0e10; --panel:#161619; --ink:#f2f2f3; --muted:#a1a1aa; --line:#26262b;
+      --accent:#4ade80; --accent-soft:#14321f; --code:#1b1b1f; --shadow:0 1px 3px rgba(0,0,0,.5),0 16px 40px -16px rgba(0,0,0,.7);
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px}
+  a{color:inherit}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* hero */
+  header{padding:88px 0 56px; text-align:center}
+  .eyebrow{
+    display:inline-block; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); padding:5px 11px; border-radius:999px; font-weight:600;
+  }
+  h1{font-size:clamp(38px,7vw,60px); line-height:1.05; letter-spacing:-.03em; margin:22px 0 0; font-weight:700}
+  .tagline{font-size:clamp(17px,2.4vw,21px); color:var(--muted); margin:18px auto 0; max-width:34em}
+  .cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:34px}
+  .btn{
+    display:inline-block; padding:12px 22px; border-radius:10px; text-decoration:none;
+    font-weight:600; font-size:15px; border:1px solid var(--line); background:var(--panel);
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .btn:hover{transform:translateY(-1px); border-color:var(--muted)}
+  .btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+  .note{margin-top:16px; font-size:13.5px; color:var(--muted)}
+
+  /* the pill demo */
+  .demo{
+    margin:56px auto 0; max-width:560px; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .demo-bar{display:flex; gap:6px; padding:12px 14px; border-bottom:1px solid var(--line)}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--line)}
+  .demo-body{padding:30px 18px 22px; display:flex; justify-content:flex-end; background:var(--code)}
+  .pill{
+    display:flex; align-items:center; gap:10px; padding:7px 9px 7px 12px; border-radius:999px;
+    background:#18181b; color:#fafafa; font-size:12.5px; line-height:1; box-shadow:0 4px 16px rgba(0,0,0,.25);
+  }
+  .count{font-variant-numeric:tabular-nums; white-space:nowrap}
+  .bar{position:relative; width:38px; height:4px; border-radius:2px; background:rgba(255,255,255,.2); overflow:hidden}
+  .fill{position:absolute; inset:0 auto 0 0; width:39%; background:#4ade80}
+  .pill button{
+    border:0; border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; font-weight:600;
+    background:#fafafa; color:#18181b; cursor:default;
+  }
+
+  /* sections */
+  section{padding:56px 0; border-top:1px solid var(--line)}
+  h2{font-size:23px; letter-spacing:-.015em; margin:0 0 14px; font-weight:650}
+  p{margin:0 0 16px}
+  .muted{color:var(--muted)}
+  pre{
+    background:var(--code); border:1px solid var(--line); border-radius:10px;
+    padding:16px; overflow-x:auto; font-size:13px; line-height:1.6; margin:0;
+  }
+  ul{margin:0; padding-left:20px}
+  li{margin-bottom:10px}
+  li::marker{color:var(--muted)}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); margin-top:22px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px}
+  .card h3{margin:0 0 6px; font-size:14.5px; font-weight:650}
+  .card p{margin:0; font-size:14px; color:var(--muted); line-height:1.55}
+  table{width:100%; border-collapse:collapse; font-size:14.5px}
+  td{padding:11px 0; border-bottom:1px solid var(--line); vertical-align:top}
+  td:first-child{font-weight:600; width:38%; padding-right:18px}
+  .scroller{overflow-x:auto}
+
+  footer{padding:48px 0 72px; border-top:1px solid var(--line); text-align:center; color:var(--muted); font-size:14px}
+  footer a{color:var(--ink); text-decoration-color:var(--line); text-underline-offset:3px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Free &amp; open source</span>
+  <h1>Carryover</h1>
+  <p class="tagline">See how full an AI chat is getting, then carry its context into a new one.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/cig13zs/carryover/releases">Download</a>
+    <a class="btn" href="https://github.com/cig13zs/carryover">Source on GitHub</a>
+  </div>
+  <p class="note">ChatGPT &middot; DeepSeek &middot; Grok &nbsp;|&nbsp; MIT licensed</p>
+
+  <div class="demo">
+    <div class="demo-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+    <div class="demo-body">
+      <div class="pill">
+        <span class="count">~38.2k &middot; 39%</span>
+        <span class="bar"><span class="fill"></span></span>
+        <button type="button">Carry over</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>The problem</h2>
+  <p>Long chats get slow, expensive and forgetful. But starting a fresh one throws away everything
+  the model learned about your problem, so you sit there re-explaining context you already explained
+  an hour ago.</p>
+  <p class="muted">Carryover reads the conversation already on your screen, shows roughly how big it
+  has grown, and on one click builds a compact handoff document you can paste into a new chat.</p>
+</section>
+
+<section>
+  <h2>What ends up in the handoff</h2>
+  <div class="scroller">
+  <table>
+    <tr><td>What we were working on</td><td class="muted">Your first real message.</td></tr>
+    <tr><td>Decisions and constraints</td><td class="muted">Lines that stated a choice, a rule or a correction, so the model does not re-suggest the approach you rejected two hours ago.</td></tr>
+    <tr><td>Code and artifacts</td><td class="muted">Code blocks, deduplicated, newest version kept first.</td></tr>
+    <tr><td>Where we left off</td><td class="muted">The last few turns, verbatim.</td></tr>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>The summary is extracted, not generated</h2>
+  <p>There is no model call anywhere in this. Carryover does not summarise your chat with an AI, it
+  pulls out the lines that are already there using plain pattern matching.</p>
+  <p>That matters for two reasons. It works instantly and offline. And <strong>it cannot invent
+  anything</strong>: every line in the handoff is a line you or the model actually wrote. A generated
+  summary can quietly hallucinate a decision you never made and carry that fiction into your next
+  chat. This one can't.</p>
+  <p class="muted">The tradeoff is that it is blunt. It keeps more than a human would and phrases
+  nothing gracefully, so it shows you the whole document in an editable box before you paste it.</p>
+</section>
+
+<section>
+  <h2>It cannot leak your conversations</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>No network requests</h3>
+      <p>No server, no API key, no analytics, no telemetry. It never opens a connection.</p>
+    </div>
+    <div class="card">
+      <h3>No declared permissions</h3>
+      <p>Open the manifest. There is no <code>permissions</code> key and no <code>host_permissions</code> key.</p>
+    </div>
+    <div class="card">
+      <h3>No dependencies</h3>
+      <p>Two files, readable in a few minutes. Nothing to supply-chain.</p>
+    </div>
+    <div class="card">
+      <h3>Rendered as text, never markup</h3>
+      <p>Your chat content can never become HTML inside the extension's own UI.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Install</h2>
+  <p class="muted">Download a build, unzip it, then open <code>chrome://extensions</code>, turn on
+  Developer mode and click Load unpacked.</p>
+  <p class="muted">Or build the three targets yourself. It needs nothing but Node and takes about a second.</p>
+<pre>git clone https://github.com/cig13zs/carryover
+cd carryover
+node build.js        <span class="muted"># dist/chatgpt, dist/deepseek, dist/grok</span>
+node engine.test.js  <span class="muted"># the engine's self-check</span></pre>
+</section>
+
+<section>
+  <h2>Known limits</h2>
+  <p class="muted">These are real, and listing them here is cheaper than a one-star review.</p>
+  <ul>
+    <li>The token number is an <strong>estimate</strong>, from a character heuristic rather than the real tokenizer. Expect it within about 15%. It is a fuel gauge, not a receipt.</li>
+    <li>The percentage is measured against a <strong>fixed assumed budget</strong> per site, because the page never says which model or plan you are on. Treat it as a hint.</li>
+    <li><strong>Images don't carry over.</strong> A turn that was an uploaded screenshot is marked so you know something visual is missing.</li>
+    <li>Long chats may be <strong>partly virtualized</strong> by the host page. Messages that aren't in the DOM can't be counted or carried.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Free, and it stays free. There is no paid tier waiting behind this.<br>
+  If it saved you some retyping, you can <a href="https://ko-fi.com/jju1s">buy me a coffee</a>.</p>
+  <p style="margin-top:22px">
+    <a href="https://github.com/cig13zs/carryover">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://github.com/cig13zs/carryover/releases">Releases</a> &nbsp;·&nbsp;
+    <a href="privacy.html">Privacy</a>
+  </p>
+  <p class="muted" style="font-size:12.5px; margin-top:20px">
+    Not affiliated with, endorsed by or connected to OpenAI, DeepSeek or xAI.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>
