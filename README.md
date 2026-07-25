@@ -168,4 +168,13 @@ If this saved you some retyping, you can
 [buy me a coffee on Ko-fi](https://ko-fi.com/jju1s). It's free either way,
 and it stays free. There is no paid tier waiting behind this.
 
+## More tools
+
+- **[Invisibles](https://github.com/cig13zs/invisibles)** — reveal & strip hidden Unicode from text
+- **[Rinse](https://github.com/cig13zs/rinse)** — see the GPS in a photo, then wash it off
+- **[Return Google Cache](https://github.com/cig13zs/return-google-cache)** — put the Cached link back on Google results
+- **[Return 100 Results](https://github.com/cig13zs/return-100-results)** — browse ~100 Google results as one page
+
+All free, all offline, all open source. [More →](https://github.com/cig13zs/About-Me)
+
 MIT licensed. Do what you like with it.
