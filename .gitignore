@@ -1,3 +1,13 @@
 dist/
 *.zip
 node_modules/
+
+# Internal working notes — account setup, distribution strategy, store listing
+# drafts. These are written to myself, and one of them carried my email address
+# into a public repo. Whatever lives here stays on this machine.
+HOW-TO-UPLOAD.md
+MARKETING.md
+SHARING.md
+STORE-SUBMISSION.md
+NOTES.md
+TODO.md
