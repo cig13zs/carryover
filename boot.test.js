@@ -1,14 +1,12 @@
 /*
  * Boot check: does content.js survive being loaded at all?
  *
- * Version 1.2.0 shipped a ReferenceError on the very first run — a `let` read
- * above its own declaration — which threw before any UI was built. The
- * extension installed fine and then did visibly nothing, with the error buried
- * in a console nobody had open. Unit tests on the engine could not catch it,
- * because the engine was never the problem.
+ * 1.2.0 shipped a `let` read above its own declaration, which threw before any
+ * UI was built. The extension installed fine and then did nothing, with the
+ * error buried in a console nobody had open. Engine unit tests can't catch
+ * that, so this stubs enough DOM to actually execute the file.
  *
- * This stubs just enough DOM to execute the file. It asserts the script runs
- * clean and actually attaches its UI. Run: node boot.test.js
+ * Run: node boot.test.js
  */
 'use strict';
 const assert = require('assert');
@@ -19,11 +17,12 @@ const vm = require('vm');
 function el(tag) {
   const node = {
     tagName: (tag || 'div').toUpperCase(),
-    children: [], style: { setProperty() {}, cssText: '' },
+    children: [], style: { setProperty() {}, cssText: '', display: '' },
     classList: { add() {}, remove() {}, contains: () => false },
     dataset: {}, attributes: {},
-    textContent: '', value: '', title: '', href: '', className: '',
-    appendChild(c) { this.children.push(c); return c; },
+    textContent: '', innerText: '', value: '', title: '', href: '', className: '',
+    parentElement: null,
+    appendChild(c) { this.children.push(c); c.parentElement = this; return c; },
     setAttribute(k, v) { this.attributes[k] = v; },
     getAttribute(k) { return this.attributes[k]; },
     addEventListener() {}, removeEventListener() {},
@@ -36,16 +35,27 @@ function el(tag) {
   return node;
 }
 
-function run(source, hostname) {
+// A block of page text sitting in the main column, the shape readStructural
+// scores. Width and left put it past the sidebar cutoff.
+function block(text) {
+  const node = el('div');
+  node.innerText = text;
+  node.textContent = text;
+  node.getBoundingClientRect = () => ({ width: 700, height: 40, top: 200, left: 400, right: 1100, bottom: 240 });
+  return node;
+}
+
+function run(source, hostname, pageBlocks) {
   const documentElement = el('html');
   const body = el('body');
+  const blocks = pageBlocks || [];
   const sandbox = {
     location: { hostname: hostname, href: 'https://' + hostname + '/' },
     innerWidth: 1440, innerHeight: 900,
     document: {
       documentElement: documentElement, body: body,
       createElement: el,
-      querySelectorAll: () => [],
+      querySelectorAll: (sel) => (String(sel).indexOf('div') === 0 ? blocks : []),
       querySelector: () => null,
       execCommand: () => true,
       addEventListener() {},
@@ -74,8 +84,8 @@ function run(source, hostname) {
 
 const source = fs.readFileSync(path.join(__dirname, 'src', 'content.js'), 'utf8');
 
-// The real assertion: loading it must not throw. A TDZ error, a typo, a missing
-// guard — anything fatal at module scope fails right here.
+// Loading it must not throw. A TDZ error, a typo, a missing guard: anything
+// fatal at module scope fails right here.
 const SITES = ['chatgpt.com', 'chat.deepseek.com', 'grok.com'];
 for (const host of SITES) {
   let root;
@@ -83,7 +93,31 @@ for (const host of SITES) {
     'content.js threw while loading on ' + host);
   assert.ok(root.children.length > 0,
     'content.js loaded but attached no UI on ' + host);
+  assert.strictEqual(root.children[0].style.display, 'none',
+    'pill is visible with no conversation on ' + host);
 }
+
+// A new-chat screen: greeting, prompt suggestions, mode chips, disclaimer. All
+// short and roughly equal. This used to clear the old floor and show the pill.
+const parent = el('div');
+[
+  'Hi, I am DeepSeek. How can I help you today?',
+  'Help me write a cover letter for a job',
+  'Explain quantum computing in simple terms',
+  'AI-generated, for reference only',
+].forEach(function (t) { parent.appendChild(block(t)); });
+
+const chips = run(source, 'chat.deepseek.com', parent.children);
+assert.strictEqual(chips.children[0].style.display, 'none',
+  'pill showed on a new-chat screen with only interface text');
+
+// A real exchange: one long turn is enough to tell it apart.
+const convo = el('div');
+convo.appendChild(block('How do I center a div in CSS?'));
+convo.appendChild(block('There are a few ways to do it. '.repeat(20)));
+const live = run(source, 'chat.deepseek.com', convo.children);
+assert.notStrictEqual(live.children[0].style.display, 'none',
+  'pill stayed hidden during a real conversation');
 
 // On a site it does not target it must attach nothing and still not throw.
 let other;

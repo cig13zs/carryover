@@ -1,11 +1,4 @@
-/*
- * Carryover — content script.
- *
- * Reads the conversation already rendered in the page, estimates its size, and
- * builds a handoff document on request. It makes no network requests of any
- * kind: there is no server, no API key, and no telemetry. Everything below runs
- * against the DOM that is already in front of you.
- */
+/* Reads the conversation from the page and builds a handoff doc. No network. */
 (function () {
   'use strict';
 
@@ -14,31 +7,17 @@
 
   const KOFI_URL = 'https://ko-fi.com/jju1s';
 
-  /*
-   * sessionStorage, not chrome.storage. It is same-origin, scoped to this one
-   * tab, cleared when the tab closes, and needs no manifest permission — which
-   * keeps the "declares nothing" promise intact. It is the only thing that can
-   * survive the navigation to a fresh chat in the same tab.
-   */
+  // sessionStorage survives the nav to a new chat and needs no permission.
   const HANDOFF_KEY = 'carryover:pending';
   const THEME_KEY = 'carryover:theme';
 
-  /*
-   * A closed whitelist, not a cast. localStorage on a chat site is writable by
-   * that site and by anything running in it, so a value read back from storage
-   * is untrusted input. It ends up in a DOM attribute that CSS selects on, so
-   * anything outside these three strings is discarded and treated as 'auto'.
-   */
-const THEMES = ['auto', 'light', 'dark'];
+  // Whitelisted: this value comes back from localStorage, which the host page
+  // can write, and ends up in a DOM attribute.
+  const THEMES = ['auto', 'light', 'dark'];
   const THEME_LABEL = { auto: 'Theme: auto', light: 'Theme: light', dark: 'Theme: dark' };
 
-  /*
-   * Declared up here, not beside applyTheme(). A `let` binding sits in the
-   * temporal dead zone until its own declaration runs, so a hoisted function
-   * that reads it must never be called above it. Getting that wrong throws
-   * before the UI is built and takes the whole content script down silently:
-   * no pill, no panel, no visible error. It shipped that way in 1.2.0.
-   */
+  // Must stay above every function that reads it. A `let` in the temporal dead
+  // zone throws, and that kills the whole script before any UI exists.
   let theme = 'auto';
 
   function readTheme() {
@@ -47,13 +26,8 @@ const THEMES = ['auto', 'light', 'dark'];
     return THEMES.indexOf(v) >= 0 ? v : 'auto';
   }
 
-  /* ---------------------------------------------------------------------- *
-   * Site adapters
-   * ---------------------------------------------------------------------- */
-
-  // ponytail: conservative per-site defaults. The page never states which plan
-  // or model window you are on, so these are a sane ruler rather than a
-  // measurement — the token count is the honest number, the bar is a hint.
+  /* Site adapters. Ceilings are rough: the page never says which model or plan
+     you are on, so the bar is a hint and the token count is the real number. */
   const ADAPTERS = [
     {
       id: 'chatgpt',
@@ -61,17 +35,11 @@ const THEMES = ['auto', 'light', 'dark'];
       host: /(^|\.)chatgpt\.com$/,
       ceiling: 32000,
       fresh: 'https://chatgpt.com/',
-      // ChatGPT's UI is monochrome; a blue button would read as foreign.
+      // Monochrome to match the rest of the UI.
       accent: '#0d0d0d',
       accentDark: '#ececf1',
-      /*
-       * `data-turn` sits on every turn and reads "user" or "assistant".
-       *
-       * Verified against the live site on 2026-07-22 — do not "simplify" this
-       * back to [data-message-author-role]. That attribute still exists but is
-       * now only emitted on some turns, so it silently returns half the
-       * conversation, which looks like it works right up until it matters.
-       */
+      // Don't swap this for [data-message-author-role]. That one still exists
+      // but only lands on some turns, so you silently get half the chat.
       read: function () {
         return [].slice.call(document.querySelectorAll('[data-turn]'))
           .map(function (el) {
@@ -85,7 +53,7 @@ const THEMES = ['auto', 'light', 'dark'];
       host: /(^|\.)deepseek\.com$/,
       ceiling: 128000,
       fresh: 'https://chat.deepseek.com/',
-      // Matches the blue DeepSeek uses for its own DeepThink and Search chips.
+      // Same blue as the DeepThink/Search chips.
       accent: '#4d6bfe',
       accentDark: '#8fa4ff',
       read: readStructural
@@ -106,34 +74,22 @@ const THEMES = ['auto', 'light', 'dark'];
     return (el.innerText || el.textContent || '').trim();
   }
 
-  /*
-   * innerText, not textContent — textContent drags in screen-reader labels
-   * ("You said:") that would pollute the handoff.
-   *
-   * A turn with no text but an image is a real turn: an uploaded screenshot or
-   * photo. Mark it so the ordering of the conversation stays intact, and so you
-   * can see at a glance that something visual is missing rather than wondering
-   * why the summary skips a beat. Images cannot ride along in a text handoff.
-   */
+  // innerText: textContent drags in screen-reader labels like "You said:".
+  // An image-only turn still counts, so the ordering stays right.
   function turnText(el) {
     const t = text(el);
     if (t) return t;
-    return el.querySelector('img') ? '[image attachment — not carried over]' : '';
+    return el.querySelector('img') ? '[image attachment, not carried over]' : '';
   }
 
-  /*
-   * Structural reader, for sites whose class names are build-hashed (DeepSeek
-   * ships classes like `_3098d02` that change on every deploy — a selector
-   * written against those is broken by the next release).
-   *
-   * Instead of naming anything, find the element that actually holds a stack of
-   * sibling text blocks in the main column, and read that.
-   */
+  /* For sites with build-hashed class names (DeepSeek ships things like
+     `_3098d02`, which change every deploy). Finds the container holding a stack
+     of sibling text blocks in the main column instead of naming a selector. */
   function readStructural() {
     const minX = innerWidth * 0.25;
     const scored = new Map();
 
-    // Any element with real text in the main column votes for its parent.
+    // Every text-bearing element votes for its parent.
     document.querySelectorAll('div, article, section').forEach(function (el) {
       const t = text(el);
       if (t.length < 20) return;
@@ -147,7 +103,7 @@ const THEMES = ['auto', 'light', 'dark'];
       scored.set(parent, entry);
     });
 
-    // The message list is the container with the most text-bearing siblings.
+    // Winner = most text across the most siblings.
     let best = null, bestScore = 0;
     scored.forEach(function (v, parent) {
       if (v.count < 2) return;
@@ -165,11 +121,8 @@ const THEMES = ['auto', 'light', 'dark'];
     });
   }
 
-  /*
-   * Which side of the conversation is this? Chat UIs almost universally give the
-   * user's turn a filled bubble and let the assistant's turn run full width.
-   * Where that reads ambiguously, fall back to strict alternation.
-   */
+  // Most chat UIs put the user in a filled bubble and let the assistant run
+  // full width. Falls back to alternation when that is ambiguous.
   function classify(el, index, turns) {
     const filled = hasBubble(el);
     const anyFilled = turns.some(function (t) { return hasBubble(t.el); });
@@ -196,18 +149,15 @@ const THEMES = ['auto', 'light', 'dark'];
   const adapter = ADAPTERS.find(function (a) { return a.host.test(location.hostname); });
   if (!adapter) return;
 
-/*
-   * An empty chat still has text on screen: mode switchers, placeholders, the
-   * composer's own buttons. The structural reader has no way to know those are
-   * not messages, so it happily scores them and reports a few tokens on a page
-   * where nothing has been said. Left alone, "Carry over" would hand you a
-   * summary assembled from button labels.
-   *
-   * The floor below is deliberately low. A real exchange clears it immediately;
-   * only stray interface text does not.
-   */
+  /* A new-chat screen is not empty: it has greeting text, prompt suggestions,
+     mode chips and a disclaimer. The structural reader scores all of that and
+     reports a conversation where nothing has been said.
+
+     Chips and placeholders are short and roughly equal in length. A real
+     exchange always has at least one long turn, so require one. */
   const MIN_TURNS = 2;
-  const MIN_TOKENS = 25;
+  const MIN_TOKENS = 120;
+  const MIN_LONGEST = 200;
 
   function readConversation() {
     let msgs;
@@ -220,24 +170,20 @@ const THEMES = ['auto', 'light', 'dark'];
       return m && m.text && (m.role === 'user' || m.role === 'assistant');
     });
     if (clean.length < MIN_TURNS) return [];
+    const longest = clean.reduce(function (n, m) { return Math.max(n, m.text.length); }, 0);
+    if (longest < MIN_LONGEST) return [];
     const total = clean.reduce(function (n, m) { return n + E.estimateTokens(m.text); }, 0);
     return total < MIN_TOKENS ? [] : clean;
   }
 
-  /* ---------------------------------------------------------------------- *
-   * UI — isolated in a shadow root so the host page cannot style or read it
-   * ---------------------------------------------------------------------- */
+  /* UI. Closed shadow root so the host page can't style or read it. */
 
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;z-index:2147483646;bottom:16px;right:16px;';
   const shadow = host.attachShadow({ mode: 'closed' });
 
-  /*
-   * Light rules are the base. Dark rules are written once and emitted twice:
-   * under [data-theme="dark"] for an explicit choice, and inside a
-   * prefers-color-scheme query under [data-theme="auto"] for following the OS.
-   * Writing them once keeps the two paths from drifting apart.
-   */
+  // Dark rules are written once and emitted twice, under [data-theme="dark"]
+  // and inside a prefers-color-scheme query, so the two can't drift.
   const BASE = [
     ':host,*{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
     '.pill{display:flex;align-items:center;gap:9px;padding:4px 5px 4px 11px;border-radius:999px;',
@@ -319,8 +265,7 @@ const closeBtn = document.createElement('button');
   closeBtn.className = 'ghost';
   closeBtn.textContent = 'Close';
 
-  // Defaults to the whole conversation. The inputs are there for the times you
-  // only want the part where the useful thinking happened.
+  // Whole conversation by default; the inputs narrow it.
   const range = document.createElement('div');
   range.className = 'range';
   const fromIn = document.createElement('input');
@@ -342,8 +287,7 @@ const closeBtn = document.createElement('button');
   panelHead.appendChild(range);
   panelHead.appendChild(closeBtn);
 
-  // A textarea, not a div: it renders text as text (never markup), and it lets
-  // you trim the handoff before you paste it.
+  // textarea so the preview is editable and can never render as markup.
   const preview = document.createElement('textarea');
   preview.className = 'preview';
   preview.spellcheck = false;
@@ -386,7 +330,7 @@ const closeBtn = document.createElement('button');
 
   const count = document.createElement('span');
   count.className = 'count';
-  count.textContent = '—';
+  count.textContent = '...';
 
   const bar = document.createElement('div');
   bar.className = 'bar';
@@ -398,8 +342,7 @@ const closeBtn = document.createElement('button');
   button.textContent = 'Carry over';
   button.title = 'Compact this conversation and copy it, to paste into a new chat';
 
-  // ponytail: a heart, not a "Donate" button. Visible while you use the thing,
-  // low-contrast enough to ignore forever. Warms on hover so it reads clickable.
+  // Low-contrast on purpose. Warms on hover so it still reads as clickable.
   const tip = document.createElement('a');
   tip.className = 'tip';
   tip.href = KOFI_URL;
@@ -441,7 +384,7 @@ const closeBtn = document.createElement('button');
 
   let toastTimer;
   function say(message) {
-    // textContent, never innerHTML — page content must never become markup here.
+    // textContent, never innerHTML. Page text must not become markup.
     toast.textContent = message;
     toast.classList.remove('hide');
     clearTimeout(toastTimer);
@@ -451,11 +394,13 @@ const closeBtn = document.createElement('button');
   function refresh() {
     const msgs = readConversation();
     if (!msgs.length) {
-      count.textContent = '—';
-      fill.style.width = '0';
-      button.disabled = true;
+      // No conversation yet. Stay out of the way instead of sitting there
+      // greyed out on the new-chat screen.
+      host.style.display = 'none';
+      panel.classList.add('hide');
       return;
     }
+    host.style.display = '';
     button.disabled = false;
     const tokens = msgs.reduce(function (n, m) { return n + E.estimateTokens(m.text); }, 0);
     const pct = Math.min(100, Math.round((tokens / adapter.ceiling) * 100));
@@ -463,15 +408,9 @@ const closeBtn = document.createElement('button');
     fill.style.width = Math.max(2, pct) + '%';
     fill.style.background = pct >= 80 ? '#ef4444' : pct >= 55 ? '#f59e0b' : '#22c55e';
 
-    /*
-     * Say something once, at the point where it is still cheap to act. A gauge
-     * only helps if you happen to look at it, and nobody watches a progress bar
-     * while they are working. Below the threshold the flag resets, so a fresh
-     * conversation gets its own single nudge and this never becomes nagging.
-     *
-     * Deliberately in-memory: chrome.storage would mean declaring the "storage"
-     * permission, and the whole pitch is that this extension declares none.
-     */
+    /* Nobody watches a progress bar, so nudge once when it still helps. The
+       flag resets below the threshold, so a new chat gets its own nudge.
+       In-memory: chrome.storage would mean declaring a permission. */
     if (pct >= NUDGE_AT && !nudged) {
       nudged = true;
       say('This chat is ' + pct + '% full. Carry it over now and the next one starts clean.');
@@ -480,13 +419,9 @@ const closeBtn = document.createElement('button');
     }
   }
 
-  /*
-   * Copy without a clipboard permission: the write has to happen inside the
-   * user's own click. `navigator.clipboard` is the good path; selecting the
-   * textarea and running execCommand is the fallback for the cases where it is
-   * refused (an unfocused page, a locked-down profile). Nothing is lost either
-   * way — the text is on screen and selectable.
-   */
+  /* Copying without a clipboard permission only works inside the user's own
+     click. execCommand is the fallback when navigator.clipboard is refused,
+     which happens on an unfocused page or a locked-down profile. */
   function copyDoc(doc) {
     const done = function () {
       say('Copied ~' + E.formatTokens(E.estimateTokens(doc)) +
@@ -502,7 +437,7 @@ const closeBtn = document.createElement('button');
       preview.select();
       const ok = document.execCommand && document.execCommand('copy');
       if (ok) done();
-      else say('Could not reach the clipboard — the text is selected, press Ctrl+C.');
+      else say('Could not reach the clipboard. The text is selected, press Ctrl+C.');
     }
   }
 
@@ -512,12 +447,8 @@ let current = [];
     return Math.min(hi, Math.max(lo, isFinite(n) ? n : lo));
   }
 
-  /*
-   * Rebuild the handoff from whatever slice is selected. The engine already
-   * takes a plain array, so narrowing the range is just slicing before the
-   * call — no second code path, and the full-conversation default is simply
-   * the whole array.
-   */
+  // Range selection is just a slice before the engine call, so there is no
+  // separate code path for it.
   function render() {
     const n = current.length;
     const from = clamp(parseInt(fromIn.value, 10), 1, n);
@@ -553,13 +484,7 @@ let current = [];
   closeBtn.addEventListener('click', function () { panel.classList.add('hide'); });
   copyBtn.addEventListener('click', function () { copyDoc(preview.value); });
 
-  // Saving uses a blob URL built in the page — no downloads permission, and the
-  // file never leaves the machine.
-  /*
-   * The last step of the job was always manual: copy, then go find a new chat.
-   * Opening it in a new tab keeps this one intact, so if the paste goes wrong
-   * the original conversation is still sitting there.
-   */
+  // Blob URL built in the page, so no downloads permission is needed.
 freshBtn.addEventListener('click', function () {
     if (!adapter.fresh) return;
     let stashed = false;
@@ -567,8 +492,7 @@ freshBtn.addEventListener('click', function () {
       sessionStorage.setItem(HANDOFF_KEY, preview.value);
       stashed = true;
     } catch (err) {
-      // private mode, or storage full. Fall through: the text is already on the
-      // clipboard, so the user can still paste it by hand.
+      // Private mode or storage full. The text is already on the clipboard.
     }
     if (!stashed) say('Could not hand it over automatically. It is on your clipboard, paste it.');
     location.href = adapter.fresh;
@@ -589,8 +513,7 @@ addEventListener('keydown', function (e) {
       panel.classList.add('hide');
       return;
     }
-    // Alt+C, chosen because it needs no manifest "commands" entry and so no
-    // extra permission. Ignored while a modifier combo the page owns is held.
+    // Alt+C needs no "commands" entry in the manifest, so no extra permission.
     if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'c' || e.key === 'C')) {
       e.preventDefault();
       openPanel();
@@ -604,16 +527,10 @@ addEventListener('keydown', function (e) {
   });
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-/* ---------------------------------------------------------------------- *
-   * Landing in the new chat
-   * ---------------------------------------------------------------------- */
+  /* Landing in the new chat. */
 
-  /*
-   * The composer is found structurally rather than by class name, for the same
-   * reason the message reader is: these sites ship build-hashed classes that
-   * change on every deploy. The composer is the widest text entry sitting in
-   * the lower part of the viewport.
-   */
+  // Found by shape, not class name: the widest text entry in the lower part of
+  // the viewport. Same reason as the message reader.
   function findComposer() {
     const nodes = document.querySelectorAll('textarea,[contenteditable="true"]');
     let best = null, bestW = 0;
@@ -626,12 +543,9 @@ addEventListener('keydown', function (e) {
     return best;
   }
 
-  /*
-   * Setting .value directly does nothing useful on a React-controlled input:
-   * React holds its own copy of the value and overwrites yours on the next
-   * render. Going through the native prototype setter and then firing a
-   * bubbling input event is what makes the framework accept the change.
-   */
+  /* Setting .value does nothing on a React-controlled input: React keeps its
+     own copy and overwrites it on the next render. The native prototype setter
+     plus a bubbling input event is what makes it stick. */
   function insertText(el, text) {
     el.focus();
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
@@ -653,10 +567,7 @@ addEventListener('keydown', function (e) {
     }
   }
 
-  /*
-   * Nothing is ever sent. The handoff is placed in the box and left there, so
-   * you read it and press enter yourself.
-   */
+  // Dropped in the box and left there. Sending is up to you.
   function restorePending() {
     let doc = null;
     try { doc = sessionStorage.getItem(HANDOFF_KEY); } catch (err) { return; }
