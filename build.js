@@ -1,7 +1,4 @@
-/*
- * Carryover — one source, two store listings.
- * Builds dist/chatgpt/ and dist/deepseek/ from src/. Run: node build.js
- */
+/* Builds dist/<target>/ from src/ for each store listing. Run: node build.js */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -12,19 +9,19 @@ const ICONS = ['icon16.png', 'icon32.png', 'icon48.png', 'icon128.png'];
 
 const TARGETS = {
   chatgpt: {
-    name: 'Carryover — unofficial context handoff for ChatGPT',
+    name: 'Carryover: unofficial context handoff for ChatGPT',
     match: 'https://chatgpt.com/*',
-    description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by OpenAI.',
+    description: 'See how full your chat is, then carry its context into a new one. Works fully offline: no account, no server, no data collected. Not affiliated with or endorsed by OpenAI.',
   },
   deepseek: {
-    name: 'Carryover — unofficial context handoff for DeepSeek',
+    name: 'Carryover: unofficial context handoff for DeepSeek',
     match: 'https://chat.deepseek.com/*',
-    description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by DeepSeek.',
+    description: 'See how full your chat is, then carry its context into a new one. Works fully offline: no account, no server, no data collected. Not affiliated with or endorsed by DeepSeek.',
   },
   grok: {
-    name: 'Carryover — unofficial context handoff for Grok',
+    name: 'Carryover: unofficial context handoff for Grok',
     match: 'https://grok.com/*',
-    description: 'See how full your chat is, then carry its context into a new one. Works fully offline — no account, no server, no data collected. Not affiliated with or endorsed by xAI.',
+    description: 'See how full your chat is, then carry its context into a new one. Works fully offline: no account, no server, no data collected. Not affiliated with or endorsed by xAI.',
   },
 };
 
@@ -37,8 +34,7 @@ function buildTarget(id, cfg) {
 
   fs.copyFileSync(path.join(SRC, 'engine.js'), path.join(outDir, 'engine.js'));
   fs.copyFileSync(path.join(SRC, 'content.js'), path.join(outDir, 'content.js'));
-// Version lives in one place. The popup used to hardcode it, which is exactly
-  // the kind of thing that silently goes stale two releases later.
+  // Popup used to hardcode the version and went stale.
   const popup = fs.readFileSync(path.join(SRC, 'popup.html'), 'utf8')
     .replace(/__VERSION__/g, VERSION);
   fs.writeFileSync(path.join(outDir, 'popup.html'), popup);
@@ -53,8 +49,7 @@ function buildTarget(id, cfg) {
     homepage_url: 'https://github.com/cig13zs/carryover',
     description: cfg.description,
 icons: { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' },
-    // A toolbar popup needs no permission. It is the only place a user can find
-    // the project and the tip jar once the extension is installed from a store.
+    // Needs no permission, and it is the only entry point once installed.
     action: {
       default_title: cfg.name,
       default_popup: 'popup.html',

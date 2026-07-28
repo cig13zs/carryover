@@ -2,20 +2,17 @@
 
 See how full an AI chat is getting, then carry its context into a new one.
 
-**The manifest has no `permissions` key.** Not a reduced set — none. It cannot
-read your other tabs, your history, your cookies, or anything outside the one
-chat page it runs on. Every other tool in this category needs broad host access
-to work, because they move context *between* different AI sites. This one
-doesn't, so it doesn't ask.
-
-Long chats get slow, expensive, and forgetful. Starting a fresh one costs you
-everything the model learned about your problem. Carryover reads the conversation
-already on your screen, shows you roughly how big it has grown, and — on one click —
+Long chats get slow and forgetful, and starting a fresh one throws away
+everything the model worked out about your problem. Carryover reads the
+conversation already on your screen, shows you roughly how big it has grown, and
 builds a compact handoff document you can paste into a new chat.
 
-**It never talks to a server. There is nothing to sign up for.**
+The manifest has no `permissions` key at all. It can't read your other tabs,
+your history or your cookies. Most tools in this category need broad host access
+because they move context between different AI sites. This one doesn't do that,
+so it doesn't ask for it.
 
-Works on ChatGPT, DeepSeek, and Grok. One build per site.
+Works on ChatGPT, DeepSeek and Grok. One build per site.
 
 **[cig13zs.github.io/carryover](https://cig13zs.github.io/carryover/)**
 
@@ -23,47 +20,37 @@ Works on ChatGPT, DeepSeek, and Grok. One build per site.
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/github/actions/workflow/status/cig13zs/carryover/test.yml?style=flat-square&label=tests)](https://github.com/cig13zs/carryover/actions)
 
----
-
 ## How it works
 
-A small pill sits in the corner of the chat page:
+A small pill sits in the corner of the chat page once there's a conversation to
+measure:
 
 ```
 ~38.2k · 39%   [ Carry over ]
 ```
 
-- **`~38.2k`** — estimated tokens in the conversation so far
-- **`39%`** — how far along a conservative context budget for that site
-- **`Carry over`** — compacts the conversation, copies it, and shows you what it copied
+`~38.2k` is the estimated token count, `39%` is how far along a conservative
+context budget for that site, and the button compacts everything, copies it, and
+shows you what it copied. Open a new chat, paste, keep working.
 
-Open a new chat, paste, keep working.
+The panel that opens is an editable text box. Delete the half of the handoff you
+don't need before pasting, or hit Save .md to keep it as a file. Escape closes
+it. Alt+C opens it.
 
-The panel that opens is an editable text box, not a preview image. Delete the
-half of the handoff you don't need before you paste it, or hit **Save .md** to
-keep it as a file. Escape closes the panel. Nothing is sent anywhere at any
-point in this.
-
-The pill matches the page it sits on, light or dark, and stays out of the way at
-about 70% opacity until you hover it. **Alt+C** does the same thing as clicking
-it. At 80% full it says so once, then shuts up, because a gauge only helps if you
-happen to be looking at it.
+The pill follows the page theme and sits at about 70% opacity until you hover
+it. At 80% full it says so once and then stays quiet.
 
 **New chat** starts a fresh conversation in the same tab and drops the handoff
-straight into the message box, so the whole loop is one click. Nothing is ever
-sent for you: the text is placed in the box and left there for you to read and
-send yourself.
+into the message box for you. It never presses send. The text is placed there
+and left alone so you read it first.
 
-By default the handoff covers the whole conversation. The two small boxes in the
-panel header narrow it, so you can take messages 1 to 6 and leave the rest behind
-when only the early part mattered.
+By default the handoff covers everything. The two boxes in the panel header
+narrow the range, so you can take messages 1 to 6 and leave the rest when only
+the early part mattered.
 
-Clicking the extension icon in the toolbar opens a small panel with links to the
-project and the tip jar.
+What ends up in the document:
 
-The handoff document contains what you actually lose when you start over:
-
-| Section | What goes in it |
+| Section | Contents |
 |---|---|
 | What we were working on | your first real message |
 | Decisions and constraints | lines stating a choice, a rule, or a correction |
@@ -72,109 +59,111 @@ The handoff document contains what you actually lose when you start over:
 
 ## The summary is extracted, not generated
 
-There is no model call. Carryover does not summarize your chat with an AI — it
-pulls out the lines that are already there, using plain pattern matching.
+There's no model call anywhere in this. Carryover pulls out lines that are
+already in the conversation using plain pattern matching.
 
-That matters for two reasons: it works instantly and offline, and **it cannot
-invent anything**. Every line in the handoff is a line you or the model actually
-wrote. A generated summary can quietly hallucinate a decision you never made and
-carry that fiction into your next chat. This can't.
+Two things follow from that. It runs instantly and offline, and it can't invent
+anything. Every line in the handoff is a line you or the model actually wrote. A
+generated summary can hallucinate a decision you never made and carry that into
+your next chat.
 
-The tradeoff is that it's blunt. It keeps more than a human would and phrases
+The cost is that it's blunt. It keeps more than a person would and phrases
 nothing gracefully. You see the whole document before you paste it.
 
 ## Security
 
-- **No network requests.** No server, no API key, no analytics, no telemetry. The
-  extension cannot leak your conversations because it never opens a connection.
-- **No declared permissions.** Check `manifest.json` — there is no `permissions`
-  key and no `host_permissions` key. It runs only on the one chat domain it was
-  built for, and can do nothing else.
-- **No remote code, no dependencies.** Two files, both readable in a few minutes.
-  Nothing to supply-chain.
-- **Rendered with `textContent`, never `innerHTML`** — your chat text can never
-  become markup inside the extension's own UI.
-- **UI lives in a closed shadow root**, so the host page can neither read nor
-  restyle it.
-- **Clipboard writes happen inside your click** and nowhere else.
-- **Two things are stored locally, nothing else.** The pending handoff goes into
-  `sessionStorage` for the moment it takes to navigate to a new chat, and is
-  deleted as soon as it is read. Your theme choice goes into `localStorage` as
-  one of three words. Neither uses the `storage` permission, and neither leaves
-  the browser. Values read back from storage are checked against a whitelist
-  before use, because storage on a chat site is writable by that site.
+No network requests. No server, no API key, no analytics. The extension can't
+leak your conversations because it never opens a connection.
+
+No declared permissions. Check `manifest.json`: there's no `permissions` key and
+no `host_permissions` key. It runs on the one chat domain it was built for.
+
+No remote code and no dependencies. Two files, both readable in a few minutes.
+
+Chat text is rendered with `textContent`, never `innerHTML`, so it can't become
+markup inside the extension's own UI. The UI lives in a closed shadow root, so
+the host page can't read or restyle it. Clipboard writes happen inside your own
+click and nowhere else.
+
+Two things get stored locally. The pending handoff goes into `sessionStorage`
+for the moment it takes to navigate to a new chat, then gets deleted as soon as
+it's read. Your theme choice goes into `localStorage` as one of three words.
+Neither needs the `storage` permission. Values read back from storage are
+checked against a whitelist first, since storage on a chat site is writable by
+that site.
 
 ## Legal
 
-- Read-only. It never sends messages, clicks buttons, automates your account, or
-  works around any rate limit. It reads what is already rendered in your browser,
-  the same way a reader-mode or ad-blocking extension does.
-- Not affiliated with, endorsed by, or connected to OpenAI, DeepSeek, or xAI. No logos
-  or brand assets are used; the product names appear only to describe which site
-  each build works with.
-- Collects no user data, so there is nothing to disclose and nothing to breach.
-- Written from scratch. No code was taken from any other usage-tracking extension.
+Read-only. It never sends messages, clicks buttons, automates your account or
+works around a rate limit. It reads what's already rendered in your browser, the
+same way a reader-mode extension does.
+
+Not affiliated with or endorsed by OpenAI, DeepSeek or xAI. No logos or brand
+assets are used. The product names appear only to say which site each build
+works with.
+
+Collects no user data, so there's nothing to disclose.
 
 ## Known limits
 
-These are real, and listing them here is cheaper than a one-star review:
+The token number is an estimate from a character heuristic rather than the real
+tokenizer. Expect it within about 15%.
 
-- **The token number is an estimate**, from a character heuristic rather than the
-  real tokenizer. Expect it to be within ~15%. It's a fuel gauge, not a receipt.
-- **The percentage is measured against a fixed assumed budget** per site, because
-  the page never says which model or plan you're on. Treat it as a hint.
-- **Images don't carry over.** A turn that was an uploaded screenshot is marked
-  `[image attachment — not carried over]` so you know something visual is missing.
-- **Long chats may be partly virtualized** by the host page — if messages far up
-  the history aren't in the DOM, they can't be counted or carried.
+The percentage runs against a fixed assumed budget per site, because the page
+never says which model or plan you're on. Treat it as a hint.
+
+Images don't carry over. A turn that was an uploaded screenshot gets marked
+`[image attachment, not carried over]` so you can see something is missing.
+
+Long chats may be partly virtualized by the host page. If messages far up the
+history aren't in the DOM, they can't be counted or carried.
 
 ## Install
 
 Grab a zip from [Releases](https://github.com/cig13zs/carryover/releases), unzip
-it, then in Chrome: `chrome://extensions` → enable **Developer mode** → **Load
-unpacked** → pick the folder.
+it, then in Chrome: `chrome://extensions` → enable Developer mode → Load
+unpacked → pick the folder.
 
-Or build it yourself, which takes about a second and needs nothing installed but
-Node:
+Or build it, which needs nothing but Node:
 
 ```bash
-node build.js       # writes dist/chatgpt, dist/deepseek, dist/grok
-node engine.test.js # the engine's self-check
+node build.js        # writes dist/chatgpt, dist/deepseek, dist/grok
+node engine.test.js  # engine self-check
+node boot.test.js    # loads content.js against a stub DOM
 ```
 
 ## Development
 
 ```
-src/engine.js      pure text logic — token estimate, extraction, compaction
-src/content.js     site adapters, the pill UI, clipboard
-build.js           emits dist/<target>/ for each store listing
+src/engine.js      token estimate, extraction, compaction
+src/content.js     site adapters, pill UI, clipboard
+build.js           emits dist/<target>/ per store listing
 engine.test.js     node engine.test.js
+boot.test.js       node boot.test.js
 ```
 
-One codebase, one build per store listing. Separate listings keep a breakage on
-one site from dragging down the reviews of the other.
+One codebase, one build per store listing, so a breakage on one site doesn't
+drag down the reviews of another.
 
-**Adapters are verified against the live sites, with the date recorded in the
-code.** ChatGPT keys off `data-turn`, not `data-message-author-role` — the latter
-still exists but is now emitted on only some turns, so it silently returns half
-the conversation. Sites whose class names are build-hashed (DeepSeek ships classes
-like `_3098d02`, regenerated on every deploy) are read structurally instead, by
-finding the container holding the stack of message siblings, so a redesign doesn't
-break them.
+ChatGPT keys off `data-turn`. Don't swap that for `data-message-author-role`:
+the old attribute still exists but only lands on some turns now, so it silently
+returns half the conversation. Sites with build-hashed class names (DeepSeek
+ships things like `_3098d02`, regenerated every deploy) get read structurally
+instead, by finding the container holding the stack of message siblings.
 
----
-
-If this saved you some retyping, you can
-[buy me a coffee on Ko-fi](https://ko-fi.com/jju1s). It's free either way,
-and it stays free. There is no paid tier waiting behind this.
+The pill only appears once a real exchange exists. A new-chat screen is full of
+greeting text, prompt suggestions and mode chips, and the structural reader has
+no way to know those aren't messages, so `readConversation()` requires at least
+one long turn before anything mounts.
 
 ## More tools
 
-- **[Invisibles](https://github.com/cig13zs/invisibles)** — reveal & strip hidden Unicode from text
-- **[Rinse](https://github.com/cig13zs/rinse)** — see the GPS in a photo, then wash it off
-- **[Return Google Cache](https://github.com/cig13zs/return-google-cache)** — put the Cached link back on Google results
-- **[Return 100 Results](https://github.com/cig13zs/return-100-results)** — browse ~100 Google results as one page
+- [Invisibles](https://github.com/cig13zs/invisibles), reveal and strip hidden Unicode from text
+- [Rinse](https://github.com/cig13zs/rinse), see the GPS in a photo and wash it off
+- [Return Google Cache](https://github.com/cig13zs/return-google-cache), put the Cached link back on Google results
+- [Return 100 Results](https://github.com/cig13zs/return-100-results), browse ~100 Google results as one page
 
-All free, all offline, all open source. [More →](https://github.com/cig13zs/About-Me)
+If this saved you some retyping you can [buy me a coffee](https://ko-fi.com/jju1s).
+It's free either way and there's no paid tier behind it.
 
-MIT licensed. Do what you like with it.
+MIT licensed.

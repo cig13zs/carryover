@@ -1,7 +1,5 @@
 /*
  * Self-check for the compaction engine.  Run:  node engine.test.js
- * No framework on purpose — if this file needs a test runner, the engine is
- * already too complicated.
  */
 'use strict';
 const assert = require('assert');
@@ -16,7 +14,7 @@ const convo = [
   { role: 'assistant', text: 'Here is a draft:\n```js\nconst x = 1;\n// early draft that is long enough to count as a real block\n```' },
   { role: 'assistant', text: 'Corrected version:\n```js\nconst x = 2;\n// the later version which supersedes the draft above\n```' },
   { role: 'user', text: 'Never use innerHTML for this, it has to stay XSS-safe.' },
-  { role: 'assistant', text: 'Agreed — textContent only.' },
+  { role: 'assistant', text: 'Agreed, textContent only.' },
   { role: 'user', text: 'What is next?' },
   { role: 'assistant', text: 'Wire up the badge UI.' }
 ];
@@ -53,16 +51,16 @@ assert.ok(out.includes('const x = 2;'), 'the newest code version is kept');
 assert.ok(out.length < convo.reduce((n, m) => n + m.text.length, 0) * 3,
   'output does not balloon past the input');
 
-// A summary must never contain text that was not in the source — this is the
-// whole safety claim of doing extraction instead of an LLM call.
+// Nothing in the summary may be absent from the source. That is the point of
+// extracting instead of calling a model.
 const sourceText = convo.map(m => m.text).join(' ').replace(/\s+/g, ' ');
 ['const x = 2;', 'Never use innerHTML'].forEach(snippet => {
   assert.ok(sourceText.includes(snippet), 'kept content traces back to the source');
 });
 
 // --- range selection --------------------------------------------------------
-// Picking "messages 1 to 4" must not leak anything from outside that window.
-// The UI slices before calling compact(), so this is the guarantee behind it.
+// "Messages 1 to 4" must not leak anything outside that window. The UI slices
+// before calling compact(), so this covers it.
 const ranged = E.compact(convo.slice(0, 4), { source: 'ChatGPT', keepLast: 2 });
 assert.ok(ranged.includes('chrome extension'), 'the selected range survives');
 assert.ok(!ranged.includes('Wire up the badge UI'), 'text after the range is excluded');

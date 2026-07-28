@@ -136,8 +136,7 @@ def promo_tile():
     d.multiline_text((36, 104), "See how full an AI chat is,\nthen carry it into a new one.",
                      font=f(REG, 19), fill=MUTED, spacing=7)
     pill(d, 36, 196, scale=0.62)
-    # ponytail: no emoji here. Pillow renders Segoe UI emoji as tofu boxes, and a
-    # missing glyph on the store tile looks broken rather than minimal.
+    # No emoji. Pillow renders Segoe UI emoji as tofu boxes.
     d.rounded_rectangle([300, 44, 404, 74], radius=15, fill="#dcfce7")
     d.text((352, 59), "FREE", font=f(BOLD, 15), fill="#16a34a", anchor="mm")
     return img

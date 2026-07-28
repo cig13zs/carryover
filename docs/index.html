@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Carryover — move a full AI chat into a new one</title>
+<title>Carryover: move a full AI chat into a new one</title>
 <meta name="description" content="A Chrome extension that shows how full your ChatGPT, DeepSeek or Grok conversation is, then compacts it into a handoff you can paste into a new chat. No server, no account, no permissions.">
 <meta property="og:title" content="Carryover">
 <meta property="og:description" content="See how full an AI chat is getting, then carry its context into a new one. Works fully offline.">
@@ -102,7 +102,7 @@
 <header>
   <span class="eyebrow">Free &amp; open source</span>
   <h1>Carryover</h1>
-  <p class="tagline">See how full an AI chat is getting, then carry its context into a new one. <strong>It asks for no permissions at all</strong> &mdash; the manifest has no permissions key, so it cannot reach your other tabs, your history or your cookies.</p>
+  <p class="tagline">See how full an AI chat is getting, then carry its context into a new one. <strong>It asks for no permissions at all.</strong> The manifest has no permissions key, so it cannot reach your other tabs, your history or your cookies.</p>
   <div class="cta">
     <a class="btn primary" href="https://github.com/cig13zs/carryover/releases">Download</a>
     <a class="btn" href="https://github.com/cig13zs/carryover">Source on GitHub</a>
@@ -123,7 +123,7 @@
 
 <section>
   <h2>The problem</h2>
-  <p>Long chats get slow, expensive and forgetful. But starting a fresh one throws away everything
+  <p>Long chats get slow and forgetful, and starting a fresh one throws away everything
   the model learned about your problem, so you sit there re-explaining context you already explained
   an hour ago.</p>
   <p class="muted">Carryover reads the conversation already on your screen, shows roughly how big it
@@ -137,7 +137,7 @@
   with the text already sitting in the message box.</p>
   <p class="muted">Nothing is ever sent for you. The handoff is placed in the box and left there,
   so you read it and press enter yourself. <kbd>Alt</kbd>+<kbd>C</kbd> does the same as clicking
-  the pill, and at 80% full it tells you once and then stays quiet.</p>
+  the pill, and at 80% full it tells you once.</p>
   <div class="grid">
     <div class="card">
       <h3>Take part of it</h3>
@@ -146,8 +146,8 @@
     </div>
     <div class="card">
       <h3>Fits the site</h3>
-      <p>Each build uses its own accent, so it reads as part of the page rather than something
-      bolted on. Auto, light or dark, your choice.</p>
+      <p>Each build uses its own accent so it sits inside the page properly. Auto, light
+      or dark.</p>
     </div>
   </div>
 </section>
@@ -157,7 +157,7 @@
   <div class="scroller">
   <table>
     <tr><td>What we were working on</td><td class="muted">Your first real message.</td></tr>
-    <tr><td>Decisions and constraints</td><td class="muted">Lines that stated a choice, a rule or a correction, so the model does not re-suggest the approach you rejected two hours ago.</td></tr>
+    <tr><td>Decisions and constraints</td><td class="muted">Lines that stated a choice, a rule or a correction, so the model does not re-suggest something you already ruled out.</td></tr>
     <tr><td>Code and artifacts</td><td class="muted">Code blocks, deduplicated, newest version kept first.</td></tr>
     <tr><td>Where we left off</td><td class="muted">The last few turns, verbatim.</td></tr>
   </table>
@@ -166,13 +166,12 @@
 
 <section>
   <h2>The summary is extracted, not generated</h2>
-  <p>There is no model call anywhere in this. Carryover does not summarise your chat with an AI, it
-  pulls out the lines that are already there using plain pattern matching.</p>
-  <p>That matters for two reasons. It works instantly and offline. And <strong>it cannot invent
+  <p>There is no model call anywhere in this. Carryover pulls out lines that are already in the
+  conversation using plain pattern matching.</p>
+  <p>Two things follow from that. It runs instantly and offline, and <strong>it cannot invent
   anything</strong>: every line in the handoff is a line you or the model actually wrote. A generated
-  summary can quietly hallucinate a decision you never made and carry that fiction into your next
-  chat. This one can't.</p>
-  <p class="muted">The tradeoff is that it is blunt. It keeps more than a human would and phrases
+  summary can hallucinate a decision you never made and carry it into your next chat.</p>
+  <p class="muted">The cost is that it is blunt. It keeps more than a person would and phrases
   nothing gracefully, so it shows you the whole document in an editable box before you paste it.</p>
 </section>
 
@@ -189,7 +188,7 @@
     </div>
     <div class="card">
       <h3>No dependencies</h3>
-      <p>Two files, readable in a few minutes. Nothing to supply-chain.</p>
+      <p>Two files, readable in a few minutes. No dependency tree to audit.</p>
     </div>
     <div class="card">
       <h3>Rendered as text, never markup</h3>

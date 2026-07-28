@@ -24,7 +24,7 @@ def draw_icon(size: int) -> Image.Image:
 
     # a thick white arrow that hops: two short strokes rising left-to-right
     # then a longer stroke pointing right, like a bouncing hop-to-next-place.
-    w = s * 0.13  # stroke width — thick, legible at 16px
+    w = s * 0.13  # stroke width, legible at 16px
 
     cx, cy = s * 0.5, s * 0.5
     # hop 1: short low stroke (bottom-left)

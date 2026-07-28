@@ -1,13 +1,12 @@
 /*
- * Carryover — pure text logic. No DOM, no network, no dependencies.
+ * Pure text logic. No DOM, no network, no dependencies.
  * Shared by the extension (content.js) and the tests (engine.test.js).
  */
 (function (root) {
   'use strict';
 
-  // ponytail: character heuristic, not a real tokenizer. Lands within ~15% on
-  // mixed English/CJK. Bundling a multi-megabyte BPE table to win a few percent
-  // on a number we display rounded ("~38k") is not worth the download.
+  // Char heuristic, within ~15% on mixed English/CJK. The number is displayed
+  // rounded ("~38k"), so a real BPE table isn't worth the download size.
   function estimateTokens(text) {
     if (!text) return 0;
     const cjk = (text.match(/[㐀-鿿豈-﫿぀-ヿ]/g) || []).length;
@@ -18,9 +17,7 @@
     return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
   }
 
-  // Lines that carry a decision, a constraint, or a correction — the things you
-  // lose when you open a new chat and the model starts suggesting the approach
-  // you already rejected two hours ago.
+  // Lines carrying a decision, constraint or correction.
   const DECISION_RE = new RegExp([
     '\\b(?:',
     'decided?|instead of|rather than|going with|switch(?:ed|ing)? to|',
@@ -93,8 +90,7 @@
 
   /*
    * Build a handoff document from a conversation.
-   * Everything here is mechanical extraction — no model call, so nothing can be
-   * invented that was not literally in the conversation.
+   * Mechanical extraction only, no model call.
    */
   function compact(messages, opts) {
     opts = opts || {};
@@ -129,8 +125,7 @@
       parts.push(truncate(goal, 700));
     }
 
-    // Decisions are drawn from the earlier messages only — the tail is included
-    // verbatim below, so repeating it here would just burn context twice.
+    // Head only. The tail goes in verbatim below.
     const decisions = extractDecisions(head.length ? head : clean, 20);
     if (decisions.length) {
       parts.push('');
