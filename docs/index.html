@@ -8,6 +8,9 @@
 <meta property="og:title" content="Carryover">
 <meta property="og:description" content="See how full an AI chat is getting, then carry its context into a new one. Works fully offline.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://cig13zs.github.io/carryover/">
+<meta name="theme-color" content="#16a34a">
+<link rel="canonical" href="https://cig13zs.github.io/carryover/">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>☕</text></svg>">
 <style>
   :root{
@@ -29,6 +32,10 @@
   }
   .wrap{max-width:760px; margin:0 auto; padding:0 24px}
   a{color:inherit}
+  a:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+  .skip-link{position:fixed;left:16px;top:12px;z-index:10;padding:8px 12px;border-radius:8px;
+    background:var(--ink);color:var(--bg);text-decoration:none;transform:translateY(-160%)}
+  .skip-link:focus{transform:translateY(0)}
   code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 
   /* hero */
@@ -64,9 +71,9 @@
   .count{font-variant-numeric:tabular-nums; white-space:nowrap}
   .bar{position:relative; width:38px; height:4px; border-radius:2px; background:rgba(255,255,255,.2); overflow:hidden}
   .fill{position:absolute; inset:0 auto 0 0; width:39%; background:#4ade80}
-  .pill button{
+  .pill .demo-button{
     border:0; border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; font-weight:600;
-    background:#fafafa; color:#18181b; cursor:default;
+    background:#fafafa; color:#18181b;
   }
 
   /* sections */
@@ -87,15 +94,17 @@
   .card h3{margin:0 0 6px; font-size:14.5px; font-weight:650}
   .card p{margin:0; font-size:14px; color:var(--muted); line-height:1.55}
   table{width:100%; border-collapse:collapse; font-size:14.5px}
-  td{padding:11px 0; border-bottom:1px solid var(--line); vertical-align:top}
-  td:first-child{font-weight:600; width:38%; padding-right:18px}
+  td,th{padding:11px 0; border-bottom:1px solid var(--line); vertical-align:top;text-align:left}
+  th{font-weight:600; width:38%; padding-right:18px}
   .scroller{overflow-x:auto}
 
   footer{padding:48px 0 72px; border-top:1px solid var(--line); text-align:center; color:var(--muted); font-size:14px}
   footer a{color:var(--ink); text-decoration-color:var(--line); text-underline-offset:3px}
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <div class="wrap">
 
@@ -115,12 +124,13 @@
       <div class="pill">
         <span class="count">~38.2k &middot; 39%</span>
         <span class="bar"><span class="fill"></span></span>
-        <button type="button">Carry over</button>
+        <span class="demo-button">Carry over</span>
       </div>
     </div>
   </div>
 </header>
 
+<main id="main">
 <section>
   <h2>The problem</h2>
   <p>Long chats get slow and forgetful, and starting a fresh one throws away everything
@@ -156,10 +166,10 @@
   <h2>What ends up in the handoff</h2>
   <div class="scroller">
   <table>
-    <tr><td>What we were working on</td><td class="muted">Your first real message.</td></tr>
-    <tr><td>Decisions and constraints</td><td class="muted">Lines that stated a choice, a rule or a correction, so the model does not re-suggest something you already ruled out.</td></tr>
-    <tr><td>Code and artifacts</td><td class="muted">Code blocks, deduplicated, newest version kept first.</td></tr>
-    <tr><td>Where we left off</td><td class="muted">The last few turns, verbatim.</td></tr>
+    <tr><th scope="row">What we were working on</th><td class="muted">Your first real message.</td></tr>
+    <tr><th scope="row">Decisions and constraints</th><td class="muted">Lines that stated a choice, a rule or a correction, so the model does not re-suggest something you already ruled out.</td></tr>
+    <tr><th scope="row">Code and artifacts</th><td class="muted">Code blocks, deduplicated, newest version kept first.</td></tr>
+    <tr><th scope="row">Where we left off</th><td class="muted">The last few turns, verbatim.</td></tr>
   </table>
   </div>
 </section>
@@ -223,6 +233,7 @@ node engine.test.js  <span class="muted"># the engine's self-check</span></pre>
     <li>Long chats may be <strong>partly virtualized</strong> by the host page. Messages that aren't in the DOM can't be counted or carried.</li>
   </ul>
 </section>
+</main>
 
 <footer>
   <p>Free, and it stays free. There is no paid tier waiting behind this.<br>
