@@ -19,6 +19,7 @@
   // Must stay above every function that reads it. A `let` in the temporal dead
   // zone throws, and that kills the whole script before any UI exists.
   let theme = 'auto';
+  let current = [];
 
   function readTheme() {
     let v = null;
@@ -74,6 +75,13 @@
     return (el.innerText || el.textContent || '').trim();
   }
 
+  // innerText forces a layout. On a long chat, calling it on every div on the
+  // page froze the tab for most of a second on each pass. textContent is free
+  // and is never shorter than innerText, so it is safe as a prefilter.
+  function tooShort(el, min) {
+    return (el.textContent || '').length < min;
+  }
+
   // innerText: textContent drags in screen-reader labels like "You said:".
   // An image-only turn still counts, so the ordering stays right.
   function turnText(el) {
@@ -91,6 +99,7 @@
 
     // Every text-bearing element votes for its parent.
     document.querySelectorAll('div, article, section').forEach(function (el) {
+      if (tooShort(el, 20)) return;
       const t = text(el);
       if (t.length < 20) return;
       const r = el.getBoundingClientRect();
@@ -159,7 +168,20 @@
   const MIN_TOKENS = 120;
   const MIN_LONGEST = 200;
 
+  /* These sites are single-page apps, so settings, the model gallery, project
+     lists and shared-link pages all run this script without a reload. The
+     structural reader happily scored those as conversations and the pill turned
+     up on pages you can't chat on.
+
+     Every page you can actually talk on has a message box, and none of the
+     others do. That is the difference, not the route name, which changes
+     whenever they ship. findComposer already looks for it by shape. */
+  function isChatPage() {
+    return !!findComposer();
+  }
+
   function readConversation() {
+    if (!isChatPage()) return [];
     let msgs;
     try {
       msgs = adapter.read() || [];
@@ -261,7 +283,7 @@
   panelHead.className = 'phead';
   const panelTitle = document.createElement('span');
   panelTitle.className = 'ptitle';
-const closeBtn = document.createElement('button');
+  const closeBtn = document.createElement('button');
   closeBtn.className = 'ghost';
   closeBtn.textContent = 'Close';
 
@@ -305,7 +327,7 @@ const closeBtn = document.createElement('button');
   const themeBtn = document.createElement('button');
   themeBtn.className = 'ghost';
   themeBtn.title = 'Theme: follow the system, or force light or dark';
-  freshBtn.title = 'Open a fresh conversation in a new tab, then paste';
+  freshBtn.title = 'Go to a fresh conversation and drop this in the box';
   const kofi = document.createElement('a');
   kofi.className = 'kofi';
   kofi.href = KOFI_URL;
@@ -384,20 +406,28 @@ const closeBtn = document.createElement('button');
 
   let toastTimer;
   function say(message) {
+    // The host is hidden whenever there is nothing to carry over, and Alt+C
+    // still works there, so a toast written into a hidden host was invisible.
+    host.style.display = '';
     // textContent, never innerHTML. Page text must not become markup.
     toast.textContent = message;
     toast.classList.remove('hide');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.classList.add('hide'); }, 4200);
+    toastTimer = setTimeout(function () {
+      toast.classList.add('hide');
+      if (panel.classList.contains('hide') && !current.length) host.style.display = 'none';
+    }, 4200);
   }
 
   function refresh() {
     const msgs = readConversation();
     if (!msgs.length) {
+      // An open panel holds text the user may have edited. A reader that
+      // momentarily comes back empty mid-render must not throw that away.
+      if (!panel.classList.contains('hide')) return;
       // No conversation yet. Stay out of the way instead of sitting there
       // greyed out on the new-chat screen.
       host.style.display = 'none';
-      panel.classList.add('hide');
       return;
     }
     host.style.display = '';
@@ -441,8 +471,6 @@ const closeBtn = document.createElement('button');
     }
   }
 
-let current = [];
-
   function clamp(n, lo, hi) {
     return Math.min(hi, Math.max(lo, isFinite(n) ? n : lo));
   }
@@ -485,7 +513,7 @@ let current = [];
   copyBtn.addEventListener('click', function () { copyDoc(preview.value); });
 
   // Blob URL built in the page, so no downloads permission is needed.
-freshBtn.addEventListener('click', function () {
+  freshBtn.addEventListener('click', function () {
     if (!adapter.fresh) return;
     let stashed = false;
     try {
@@ -499,7 +527,6 @@ freshBtn.addEventListener('click', function () {
   });
 
   saveBtn.addEventListener('click', function () {
-
     const url = URL.createObjectURL(new Blob([preview.value], { type: 'text/markdown' }));
     const a = document.createElement('a');
     a.href = url;
@@ -508,7 +535,7 @@ freshBtn.addEventListener('click', function () {
     setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
   });
 
-addEventListener('keydown', function (e) {
+  addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !panel.classList.contains('hide')) {
       panel.classList.add('hide');
       return;
