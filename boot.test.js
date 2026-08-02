@@ -15,12 +15,19 @@ const path = require('path');
 const vm = require('vm');
 
 function el(tag) {
+  // classList used to be a no-op that always reported false. That made every
+  // assertion about .hide meaningless and hid a real regression.
+  const classes = new Set();
   const node = {
     tagName: (tag || 'div').toUpperCase(),
     children: [], style: { setProperty() {}, cssText: '', display: '' },
-    classList: { add() {}, remove() {}, contains: () => false },
+    classList: {
+      add: (c) => classes.add(c),
+      remove: (c) => classes.delete(c),
+      contains: (c) => classes.has(c),
+    },
     dataset: {}, attributes: {},
-    textContent: '', innerText: '', value: '', title: '', href: '', className: '',
+    textContent: '', innerText: '', value: '', title: '', href: '',
     parentElement: null,
     appendChild(c) { this.children.push(c); c.parentElement = this; return c; },
     setAttribute(k, v) { this.attributes[k] = v; },
@@ -32,6 +39,15 @@ function el(tag) {
     attachShadow() { this.shadow = el('shadow'); return this.shadow; },
     focus() {}, select() {}, click() {},
   };
+  // `panel.className = 'panel hide'` has to reach classList, or the two views
+  // of the same state disagree.
+  Object.defineProperty(node, 'className', {
+    get: () => Array.from(classes).join(' '),
+    set: (v) => {
+      classes.clear();
+      String(v).split(/\s+/).filter(Boolean).forEach((c) => classes.add(c));
+    },
+  });
   return node;
 }
 
@@ -45,17 +61,32 @@ function block(text) {
   return node;
 }
 
-function run(source, hostname, pageBlocks) {
+// The message box every chat page has and no settings or gallery page does.
+// Sits in the lower part of the viewport, which is how findComposer spots it.
+function composer() {
+  const node = el('textarea');
+  node.getBoundingClientRect = () => ({ width: 700, height: 48, top: 700, left: 400, right: 1100, bottom: 748 });
+  return node;
+}
+
+function run(source, hostname, pageBlocks, opts) {
   const documentElement = el('html');
   const body = el('body');
   const blocks = pageBlocks || [];
+  const hasComposer = !opts || opts.composer !== false;
+  const inputs = hasComposer ? [composer()] : [];
   const sandbox = {
     location: { hostname: hostname, href: 'https://' + hostname + '/' },
     innerWidth: 1440, innerHeight: 900,
     document: {
       documentElement: documentElement, body: body,
       createElement: el,
-      querySelectorAll: (sel) => (String(sel).indexOf('div') === 0 ? blocks : []),
+      querySelectorAll: (sel) => {
+        const s = String(sel);
+        if (s.indexOf('div') === 0) return blocks;
+        if (s.indexOf('textarea') === 0) return inputs;
+        return [];
+      },
       querySelector: () => null,
       execCommand: () => true,
       addEventListener() {},
@@ -118,6 +149,13 @@ convo.appendChild(block('There are a few ways to do it. '.repeat(20)));
 const live = run(source, 'chat.deepseek.com', convo.children);
 assert.notStrictEqual(live.children[0].style.display, 'none',
   'pill stayed hidden during a real conversation');
+
+// Same conversation-shaped text, but on a page with no message box: settings,
+// the model gallery, a project list. These are the pages the pill used to turn
+// up on, because the structural reader scored their copy as a conversation.
+const noBox = run(source, 'grok.com', convo.children, { composer: false });
+assert.strictEqual(noBox.children[0].style.display, 'none',
+  'pill showed on a page with no composer, so not a chat');
 
 // On a site it does not target it must attach nothing and still not throw.
 let other;
