@@ -73,5 +73,8 @@ assert.strictEqual(E.compact(null, {}), null, 'null input does not throw');
 assert.ok(E.compact([{ role: 'user', text: 'hi' }], {}), 'single message still works');
 assert.ok(!E.compact([{ role: 'system', text: 'ignored' }, { role: 'user', text: 'kept' }], {})
   .includes('ignored'), 'non user/assistant roles are dropped');
+const trimmed = E.compact([{ role: 'user', text: 'word '.repeat(200) }], { tailBudget: 50 });
+assert.ok(trimmed.includes('...[trimmed]'), 'trim marker stays plain ASCII');
+assert.ok(!trimmed.includes(String.fromCodePoint(0x2026)), 'trim marker has no Unicode ellipsis');
 
 console.log('All engine checks passed.');

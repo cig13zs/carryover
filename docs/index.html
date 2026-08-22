@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Carryover: move a full AI chat into a new one</title>
-<meta name="description" content="A Chrome extension that shows how full your ChatGPT, DeepSeek or Grok conversation is, then compacts it into a handoff you can paste into a new chat. No server, no account, no permissions.">
+<title>Carryover: keep free AI chats moving</title>
+<meta name="description" content="A local Chrome extension for free ChatGPT, DeepSeek and Grok users that carries context into a fresh conversation.">
 <meta property="og:title" content="Carryover">
-<meta property="og:description" content="See how full an AI chat is getting, then carry its context into a new one. Works fully offline.">
+<meta property="og:description" content="Keep a free ChatGPT, DeepSeek or Grok conversation moving with a local, editable context handoff.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cig13zs.github.io/carryover/">
 <meta name="theme-color" content="#16a34a">
@@ -111,9 +111,9 @@
 <header>
   <span class="eyebrow">Free &amp; open source</span>
   <h1>Carryover</h1>
-  <p class="tagline">See how full an AI chat is getting, then carry its context into a new one. <strong>It asks for no permissions at all.</strong> The manifest has no permissions key, so it cannot reach your other tabs, your history or your cookies.</p>
+  <p class="tagline">Built for people using the free tiers of ChatGPT, DeepSeek and Grok. See roughly how large a chat has grown, then carry its context into a fresh one. <strong>One install covers all three.</strong> It runs only on those chat domains and has no tabs, history, cookies or storage API permission.</p>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/cig13zs/carryover/releases">Download</a>
+    <a class="btn primary" href="https://github.com/cig13zs/carryover/releases">Download the extension</a>
     <a class="btn" href="https://github.com/cig13zs/carryover">Source on GitHub</a>
   </div>
   <p class="note">ChatGPT &middot; DeepSeek &middot; Grok &nbsp;|&nbsp; MIT licensed</p>
@@ -156,8 +156,8 @@
     </div>
     <div class="card">
       <h3>Fits the site</h3>
-      <p>Each build uses its own accent so it sits inside the page properly. Auto, light
-      or dark.</p>
+      <p>The extension recognizes the current site and uses its matching reader and accent.
+      Auto, light or dark.</p>
     </div>
   </div>
 </section>
@@ -186,19 +186,19 @@
 </section>
 
 <section>
-  <h2>It cannot leak your conversations</h2>
+  <h2>Conversation processing stays in the tab</h2>
   <div class="grid">
     <div class="card">
-      <h3>No network requests</h3>
-      <p>No server, no API key, no analytics, no telemetry. It never opens a connection.</p>
+      <h3>No automatic network requests</h3>
+      <p>No server, API key or analytics endpoint. Project and donation links open only when clicked.</p>
     </div>
     <div class="card">
-      <h3>No declared permissions</h3>
-      <p>Open the manifest. There is no <code>permissions</code> key and no <code>host_permissions</code> key.</p>
+      <h3>Three-site scope</h3>
+      <p>The manifest matches only ChatGPT, DeepSeek and Grok. Chrome shows that site access because reading the open chat is the feature.</p>
     </div>
     <div class="card">
       <h3>No dependencies</h3>
-      <p>Two files, readable in a few minutes. No dependency tree to audit.</p>
+      <p>Two JavaScript files contain all extension behavior. No dependency tree to audit.</p>
     </div>
     <div class="card">
       <h3>Rendered as text, never markup</h3>
@@ -214,21 +214,21 @@
 
 <section>
   <h2>Install</h2>
-  <p class="muted">Download a build, unzip it, then open <code>chrome://extensions</code>, turn on
-  Developer mode and click Load unpacked.</p>
-  <p class="muted">Or build the three targets yourself. It needs nothing but Node and takes about a second.</p>
+  <p class="muted">Download the release zip, unzip it, then open <code>chrome://extensions</code>, turn on
+  Developer mode and click Load unpacked. The same install covers all three sites.</p>
+  <p class="muted">Or build the package yourself. It needs nothing but Node.</p>
 <pre>git clone https://github.com/cig13zs/carryover
 cd carryover
-node build.js        <span class="muted"># dist/chatgpt, dist/deepseek, dist/grok</span>
-node engine.test.js  <span class="muted"># the engine's self-check</span></pre>
+node build.js        <span class="muted"># unpacked folder + store-ready zip</span>
+node build.test.js   <span class="muted"># scope + reproducibility checks</span></pre>
 </section>
 
 <section>
   <h2>Known limits</h2>
-  <p class="muted">These are real, and listing them here is cheaper than a one-star review.</p>
+  <p class="muted">Current limits:</p>
   <ul>
     <li>The token number is an <strong>estimate</strong>, from a character heuristic rather than the real tokenizer. Expect it within about 15%. It is a fuel gauge, not a receipt.</li>
-    <li>The percentage is measured against a <strong>fixed assumed budget</strong> per site, because the page never says which model or plan you are on. Treat it as a hint.</li>
+    <li>The percentage uses a <strong>fixed conservative planning budget</strong> for each free-tier workflow. The page never reveals your model, rollout or plan, so this is a preparation hint, not your account limit.</li>
     <li><strong>Images don't carry over.</strong> A turn that was an uploaded screenshot is marked so you know something visual is missing.</li>
     <li>Long chats may be <strong>partly virtualized</strong> by the host page. Messages that aren't in the DOM can't be counted or carried.</li>
   </ul>

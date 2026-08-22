@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Carryover privacy policy</title>
-<meta name="description" content="Carryover collects no data of any kind. It makes no network requests and declares no permissions.">
+<meta name="description" content="Carryover processes chat text on your device and does not collect or transmit it. Its site access is limited to three supported chat domains.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>☕</text></svg>">
 <style>
   :root{--bg:#fbfbfa;--ink:#18181b;--muted:#5d5d66;--line:#e6e6e3;--code:#f4f4f2}
@@ -32,7 +32,7 @@
 <div class="wrap">
 
 <h1>Privacy policy</h1>
-<p class="sub">Carryover browser extension &middot; last updated 23 July 2026</p>
+<p class="sub">Carryover browser extension &middot; last updated 23 August 2026</p>
 
 <h2>The short version</h2>
 <p>Carryover collects nothing and transmits nothing. There is no server to send data to, no account
@@ -64,8 +64,7 @@ own machine. Nothing leaves your device at any point.</p>
 
 <h2 id="local">Local storage</h2>
 <p>Two things are written to your browser's own storage for the current site. Neither is transmitted
-anywhere, and neither uses the extension <code>storage</code> permission, which is why the manifest
-still declares no permissions at all.</p>
+anywhere and neither uses the extension <code>storage</code> API.</p>
 <ul>
   <li><strong>The pending handoff</strong>, in <code>sessionStorage</code>, only when you press
   <em>New chat</em>. It exists so the text survives the page navigation into the fresh conversation.
@@ -80,13 +79,28 @@ still declares no permissions at all.</p>
 
 <h2>Permissions</h2>
 <p>The extension declares no <code>permissions</code> and no <code>host_permissions</code> in its
-manifest. It runs one content script on the single chat site each build was made for, and it can do
-nothing else. You can verify this by reading <code>manifest.json</code> in the extension folder.</p>
+manifest. Its content script matches only <code>https://chatgpt.com/*</code>,
+<code>https://chat.deepseek.com/*</code> and <code>https://grok.com/*</code>. Chrome may describe this
+as permission to read and change data on those sites. The extension needs that access to read the
+rendered conversation, add its controls and place a handoff in a new chat when you request it. It
+does not press send. You can verify the full scope in <code>manifest.json</code>.</p>
+
+<h2>Chrome Web Store Limited Use</h2>
+<p>Carryover's use of information received from Chrome APIs complies with the Chrome Web Store User
+Data Policy, including its Limited Use requirements. Conversation text is used only to provide the
+visible size estimate and handoff requested by the user. It is not transferred to the developer,
+used for advertising or credit decisions, or used for any unrelated purpose.</p>
+
+<h2>AI service boundaries</h2>
+<p>Carryover does not bypass safety controls, usage or rate limits, account rules or plan
+restrictions on any supported service. It does not send messages or operate an account on the
+user's behalf.</p>
 
 <h2>Network access</h2>
-<p>The extension makes no network requests. It contains no remote code, no third-party libraries and
-no tracking scripts. Because it never opens a connection, it cannot transmit your conversations even
-in principle.</p>
+<p>The extension code makes no automatic network requests. It contains no remote code, third-party
+libraries or tracking scripts. The popup and on-page panel contain normal links to the project site,
+GitHub and Ko-fi; your browser opens one only when you click it. No chat text is attached to those
+links.</p>
 
 <h2>Third parties</h2>
 <p>No data is shared with third parties, because no data is collected. Carryover is not affiliated

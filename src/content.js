@@ -27,14 +27,16 @@
     return THEMES.indexOf(v) >= 0 ? v : 'auto';
   }
 
-  /* Site adapters. Ceilings are rough: the page never says which model or plan
-     you are on, so the bar is a hint and the token count is the real number. */
+  /* Carryover is designed around free-tier sessions. These are conservative
+     planning budgets, not advertised service limits: the page never reveals
+     the user's model, plan or actual context window. The bar is only a hint;
+     the estimated token count is the useful number. */
   const ADAPTERS = [
     {
       id: 'chatgpt',
       name: 'ChatGPT',
       host: /(^|\.)chatgpt\.com$/,
-      ceiling: 32000,
+      planningBudget: 32000,
       fresh: 'https://chatgpt.com/',
       // Monochrome to match the rest of the UI.
       accent: '#0d0d0d',
@@ -52,7 +54,7 @@
       id: 'deepseek',
       name: 'DeepSeek',
       host: /(^|\.)deepseek\.com$/,
-      ceiling: 128000,
+      planningBudget: 128000,
       fresh: 'https://chat.deepseek.com/',
       // Same blue as the DeepThink/Search chips.
       accent: '#4d6bfe',
@@ -63,7 +65,7 @@
       id: 'grok',
       name: 'Grok',
       host: /(^|\.)grok\.com$/,
-      ceiling: 128000,
+      planningBudget: 128000,
       fresh: 'https://grok.com/',
       accent: '#111111',
       accentDark: '#e8e8e8',
@@ -353,6 +355,7 @@
   const count = document.createElement('span');
   count.className = 'count';
   count.textContent = '...';
+  count.title = 'Rough share of a conservative free-plan planning budget, not your account limit';
 
   const bar = document.createElement('div');
   bar.className = 'bar';
@@ -433,7 +436,7 @@
     host.style.display = '';
     button.disabled = false;
     const tokens = msgs.reduce(function (n, m) { return n + E.estimateTokens(m.text); }, 0);
-    const pct = Math.min(100, Math.round((tokens / adapter.ceiling) * 100));
+    const pct = Math.min(100, Math.round((tokens / adapter.planningBudget) * 100));
     count.textContent = '~' + E.formatTokens(tokens) + ' · ' + pct + '%';
     fill.style.width = Math.max(2, pct) + '%';
     fill.style.background = pct >= 80 ? '#ef4444' : pct >= 55 ? '#f59e0b' : '#22c55e';
@@ -443,7 +446,7 @@
        In-memory: chrome.storage would mean declaring a permission. */
     if (pct >= NUDGE_AT && !nudged) {
       nudged = true;
-      say('This chat is ' + pct + '% full. Carry it over now and the next one starts clean.');
+      say('This free-plan estimate is at ' + pct + '%. Carry it over now and the next chat starts clean.');
     } else if (pct < NUDGE_AT - 10) {
       nudged = false;
     }

@@ -1,18 +1,21 @@
 # Carryover
 
-See how full an AI chat is getting, then carry its context into a new one.
+Keep a free AI chat moving without starting over.
 
-Long chats get slow and forgetful, and starting a fresh one throws away
-everything the model worked out about your problem. Carryover reads the
-conversation already on your screen, shows you roughly how big it has grown, and
-builds a compact handoff document you can paste into a new chat.
+Carryover is built for people using the free tiers of ChatGPT, DeepSeek and
+Grok. Long free-tier chats can become slow or run into practical context limits,
+while starting a fresh conversation throws away everything the model worked out
+about your problem. Carryover reads the conversation already on your screen,
+shows roughly how large it has grown, and builds a compact handoff document for
+a fresh chat.
 
-The manifest has no `permissions` key at all. It can't read your other tabs,
-your history or your cookies. Most tools in this category need broad host access
-because they move context between different AI sites. This one doesn't do that,
-so it doesn't ask for it.
-
-Works on ChatGPT, DeepSeek and Grok. One build per site.
+One extension covers the free ChatGPT, DeepSeek and Grok workflows. Paid-plan
+users can run it too, but the percentage is deliberately a conservative
+free-plan planning hint rather than a measurement of their account limit. Its content script is limited
+to those three chat domains. Chrome may describe that as access to those sites,
+because reading the open conversation is the feature. The manifest still needs
+no extension API permissions and has no access to your other tabs, history or
+cookies.
 
 **[cig13zs.github.io/carryover](https://cig13zs.github.io/carryover/)**
 
@@ -29,9 +32,10 @@ measure:
 ~38.2k · 39%   [ Carry over ]
 ```
 
-`~38.2k` is the estimated token count, `39%` is how far along a conservative
-context budget for that site, and the button compacts everything, copies it, and
-shows you what it copied. Open a new chat, paste, keep working.
+`~38.2k` is the estimated token count. `39%` is progress against a conservative
+planning budget chosen for the free-tier workflow, not a claim about the
+platform's current limit or your account. The button compacts everything,
+copies it, and shows you what it copied. Open a new chat, paste, keep working.
 
 The panel that opens is an editable text box. Delete the half of the handoff you
 don't need before pasting, or hit Save .md to keep it as a file. Escape closes
@@ -72,13 +76,15 @@ nothing gracefully. You see the whole document before you paste it.
 
 ## Security
 
-No network requests. No server, no API key, no analytics. The extension can't
-leak your conversations because it never opens a connection.
+The extension code makes no automatic network requests. There is no server, API
+key or analytics endpoint, so conversation text stays in the current tab.
 
-No declared permissions. Check `manifest.json`: there's no `permissions` key and
-no `host_permissions` key. It runs on the one chat domain it was built for.
+The only site access is the three exact patterns under `content_scripts.matches`
+in `manifest.json`. There is no `permissions` key and no `host_permissions` key.
+The same package chooses the matching site adapter at runtime.
 
-No remote code and no dependencies. Two files, both readable in a few minutes.
+No remote code and no dependencies. Two JavaScript files contain all extension
+behavior, so the code that touches a conversation is easy to inspect.
 
 Chat text is rendered with `textContent`, never `innerHTML`, so it can't become
 markup inside the extension's own UI. The UI lives in a closed shadow root, so
@@ -94,23 +100,27 @@ that site.
 
 ## Legal
 
-Read-only. It never sends messages, clicks buttons, automates your account or
-works around a rate limit. It reads what's already rendered in your browser, the
-same way a reader-mode extension does.
+User-controlled. It never sends messages, clicks site buttons or automates your
+account. It does not bypass safety controls, usage or rate limits, account rules
+or plan restrictions. It reads the conversation already rendered in your
+browser. If you press **New chat**, it places the handoff in the empty composer
+and leaves sending to you.
 
 Not affiliated with or endorsed by OpenAI, DeepSeek or xAI. No logos or brand
-assets are used. The product names appear only to say which site each build
-works with.
+assets are used. The product names identify the sites the extension supports.
 
-Collects no user data, so there's nothing to disclose.
+It does not collect or transmit user data. The [privacy policy](https://cig13zs.github.io/carryover/privacy.html)
+documents its site access and local storage.
 
 ## Known limits
 
 The token number is an estimate from a character heuristic rather than the real
 tokenizer. Expect it within about 15%.
 
-The percentage runs against a fixed assumed budget per site, because the page
-never says which model or plan you're on. Treat it as a hint.
+The percentage runs against a fixed conservative planning budget per site,
+aimed at free-tier sessions. The page never reveals which model, rollout or plan
+you are on, so it cannot know your actual limit. Treat the percentage as a
+prompt to prepare a handoff, not a quota meter.
 
 Images don't carry over. A turn that was an uploaded screenshot gets marked
 `[image attachment, not carried over]` so you can see something is missing.
@@ -120,16 +130,17 @@ history aren't in the DOM, they can't be counted or carried.
 
 ## Install
 
-Grab a zip from [Releases](https://github.com/cig13zs/carryover/releases), unzip
-it, then in Chrome: `chrome://extensions` → enable Developer mode → Load
-unpacked → pick the folder.
+Grab the single zip from [Releases](https://github.com/cig13zs/carryover/releases),
+unzip it, then in Chrome: `chrome://extensions` → enable Developer mode → Load
+unpacked → pick the folder. That one install works on all three supported sites.
 
 Or build it, which needs nothing but Node:
 
 ```bash
-node build.js        # writes dist/chatgpt, dist/deepseek, dist/grok
+node build.js        # writes dist/carryover and carryover-<version>.zip
 node engine.test.js  # engine self-check
-node boot.test.js    # loads content.js against a stub DOM
+node boot.test.js    # boots the content script on all three hostnames
+node build.test.js   # checks manifest scope and reproducible package bytes
 ```
 
 ## Development
@@ -137,13 +148,14 @@ node boot.test.js    # loads content.js against a stub DOM
 ```
 src/engine.js      token estimate, extraction, compaction
 src/content.js     site adapters, pill UI, clipboard
-build.js           emits dist/<target>/ per store listing
+build.js           emits one unpacked extension and deterministic zip
 engine.test.js     node engine.test.js
 boot.test.js       node boot.test.js
+build.test.js      package and manifest checks
 ```
 
-One codebase, one build per store listing, so a breakage on one site doesn't
-drag down the reviews of another.
+`content.js` selects one adapter from the current hostname. Code for a site is
+never run on either of the other two, even though all adapters ship together.
 
 ChatGPT keys off `data-turn`. Don't swap that for `data-message-author-role`:
 the old attribute still exists but only lands on some turns now, so it silently
@@ -160,8 +172,7 @@ one long turn before anything mounts.
 
 - [Invisibles](https://github.com/cig13zs/invisibles), reveal and strip hidden Unicode from text
 - [Rinse](https://github.com/cig13zs/rinse), see the GPS in a photo and wash it off
-- [Return Google Cache](https://github.com/cig13zs/return-google-cache), put the Cached link back on Google results
-- [Return 100 Results](https://github.com/cig13zs/return-100-results), browse ~100 Google results as one page
+- [Search Restore](https://github.com/cig13zs/search-restore), add archive links and load more Google results on demand
 
 If this saved you some retyping you can [buy me a coffee](https://ko-fi.com/jju1s).
 It's free either way and there's no paid tier behind it.

@@ -57,8 +57,8 @@ def base(title, sub):
     return img, d
 
 def shot_pill(site):
-    img, d = base("See how full your chat is getting",
-                  "A quiet pill in the corner. No tab to open, nothing to sign into.")
+    img, d = base("Keep free AI chats moving",
+                  "A rough free-plan planning hint, then an editable handoff when you need it.")
     d.rounded_rectangle([80, 260, 1200, 700], radius=18, fill=PANEL, outline=LINE, width=2)
     d.rounded_rectangle([80, 260, 1200, 322], radius=18, fill="#f4f4f2", outline=LINE, width=2)
     d.rectangle([80, 300, 1200, 322], fill="#f4f4f2")
@@ -109,13 +109,13 @@ def shot_panel():
     return img
 
 def shot_privacy():
-    img, d = base("It cannot leak your conversations",
-                  "Not a promise about how the data is handled. There is no data and no connection.")
+    img, d = base("Your chats stay in the current tab",
+                  "Carryover reads the open conversation locally and does not send it anywhere.")
     items = [
-        ("No network requests", "No server, no API key, no analytics, no telemetry."),
-        ("No declared permissions", "No permissions key and no host_permissions key in the manifest."),
-        ("No remote code, no dependencies", "Two files. You can read the whole thing in a few minutes."),
-        ("Nothing is generated", "The handoff is extracted from text already on the page, so it\ncannot invent a decision you never made."),
+        ("No automatic network requests", "No server, API key, analytics endpoint or telemetry."),
+        ("Free-tier focus", "Built around conservative planning budgets for free chat sessions."),
+        ("No remote code, no dependencies", "Two JavaScript files contain the extension behavior."),
+        ("Mechanical extraction", "The handoff contains text already on the page and is shown\nbefore you paste it."),
     ]
     yy = 268
     for head, body in items:
@@ -133,12 +133,12 @@ def promo_tile():
     img = Image.new("RGB", (440, 280), BG)
     d = ImageDraw.Draw(img)
     d.text((36, 44), "Carryover", font=f(BOLD, 44), fill=INK)
-    d.multiline_text((36, 104), "See how full an AI chat is,\nthen carry it into a new one.",
+    d.multiline_text((36, 104), "Keep a free AI chat moving\nwithout starting over.",
                      font=f(REG, 19), fill=MUTED, spacing=7)
     pill(d, 36, 196, scale=0.62)
     # No emoji. Pillow renders Segoe UI emoji as tofu boxes.
     d.rounded_rectangle([300, 44, 404, 74], radius=15, fill="#dcfce7")
-    d.text((352, 59), "FREE", font=f(BOLD, 15), fill="#16a34a", anchor="mm")
+    d.text((352, 59), "FREE TOOL", font=f(BOLD, 13), fill="#16a34a", anchor="mm")
     return img
 
 SITES = {"chatgpt": "chatgpt.com", "deepseek": "chat.deepseek.com", "grok": "grok.com"}

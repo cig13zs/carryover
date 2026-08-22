@@ -81,7 +81,7 @@
 
   function truncate(text, max) {
     if (text.length <= max) return text;
-    return text.slice(0, max).replace(/\s+\S*$/, '') + '\n…[trimmed]';
+    return text.slice(0, max).replace(/\s+\S*$/, '') + '\n...[trimmed]';
   }
 
   function label(role) {
